@@ -1,13 +1,13 @@
 #include <Arduino.h>
 #include <Preferences.h>
-#include <Thermistor.h>
+#include "ThermistorCalc.h"
 
-Thermistor *thermistor;
+ThermistorCalc *thermistor;
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  thermistor = new Thermistor(-40, 167820, 25, 6523, 120, 302);
+  thermistor = new ThermistorCalc(-40, 167820, 25, 6523, 120, 302);
 }
 
 void loop() {
