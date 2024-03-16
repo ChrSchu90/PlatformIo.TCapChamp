@@ -9,4 +9,4 @@ Calculates the temperature or resistance of an hermistor based on the [Steinhart
 
 `1/T = a + b(Ln R) + c(Ln R)^3`
 
-This inmplementation makes only the calculation without the need of linking any i/o!
+This implementation makes only the calculation without the need of linking any I/O!
