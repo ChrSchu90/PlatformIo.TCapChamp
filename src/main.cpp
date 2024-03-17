@@ -2,18 +2,38 @@
 #include <Preferences.h>
 #include <WiFiManager.h>
 #include <WiFi.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <ESPDash.h>
 #include "ThermistorCalc.h"
 
 WiFiManager wfm;
 ThermistorCalc *thermistor;
 
-void test(arduino_event_t *event)
+AsyncWebServer server(80);
+ESPDash dashboard(&server);
+Card temperatureInCard(&dashboard, TEMPERATURE_CARD, "Temperature In", "°C");
+Card temperatureOutCard(&dashboard, TEMPERATURE_CARD, "Temperature Out", "°C");
+Card offsetCard(&dashboard, SLIDER_CARD, "Temperature Offset", "", 0, 15, 0);
+
+/// @brief Setup for Web UI
+void setupWebUi()
 {
+	offsetCard.attachCallback([&](float value)
+	{
+  		Serial.println("[offsetCard] Slider Callback Triggered: "+String(value));
+  		offsetCard.update(value);
+  		dashboard.sendUpdates();
+	});
+
+	server.begin();
 }
 
 /// @brief Setup for WiFiManager as none blocking implementation
 void setupWifiManager()
 {
+	delay(5000);
+
 	// explicitly set mode, esp defaults to STA+AP
 	WiFi.mode(WIFI_STA);
 
@@ -28,6 +48,7 @@ void setupWifiManager()
 	if (wfm.autoConnect(wfm.getDefaultAPName().c_str(), "123456789"))
 	{
 		Serial.println("connected...yeey :)");
+		setupWebUi();
 	}
 	else
 	{
@@ -47,6 +68,11 @@ void setup()
 void loop()
 {
 	wfm.process();
+
+	temperatureInCard.update((int)random(0, 50));
+	temperatureOutCard.update((int)random(0, 100));
+	dashboard.sendUpdates();
+
 	// double c = thermistor->celsiusFromResistance(7701);
 	// double r = thermistor->resistanceFromCelsius(21);
 	delay(2000);
