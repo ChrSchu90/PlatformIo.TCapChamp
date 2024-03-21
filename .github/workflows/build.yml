@@ -18,6 +18,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+    - name: Rename secrets template file for build
+      run: mv src/Secrets.template.h src/Secrets.h
     - uses: actions/cache@v4
       with:
         path: |
