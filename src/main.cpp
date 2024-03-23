@@ -8,48 +8,53 @@
 #include <arduino-timer.h>
 #include <HTTPClient.h>
 #include <RunningMedian.h>
+#include <SPI.h>
 #include "ThermistorCalc.h"
 #include "Secrets.h"
 
-#define KEY_MANUAL_MODE "ManualMode"
-#define KEY_TEMP_OFFSET "TempOffet"
-#define KEY_TEMP_MANUAL "TempManual"
+static const bool DEBUG_LOGGING = true;											 // @brief Enable/disable logs to Serial println
+static const uint8_t SPI_BUS_THERMISTOR_OUT = VSPI;								 // @brief SPI bus used for digital potentiometer for output temperature
+static const char *PREF_KEY_MANUAL_MODE = "ManualMode";							 // @brief Preferences key for manual mode
+static const char *PREF_KEY_TEMP_OFFSET = "TempOffet";							 // @brief Preferences key for temperature offset
+static const char *PREF_KEY_TEMP_MANUAL = "TempManual";							 // @brief Preferences key for manual temperature
+static const byte GPIO_THERMISTOR_IN = 36;										 // @brief GPIO used for real input temperature from thermistor
+static const byte GPIO_FAILOVER_OUT = 27;										 // @brief GPIO used for real input temperature from thermistor
+static const float NO_TEMPERATURE = -273.15;									 // @brief Replacement value for none valid temperature
+static const int WEB_UI_UPDATE_CYCLE = 10000;									 // @brief Update time for Web UI in milliseconds
+static const int DEVIDER_RESISTANCE_TEMP_IN = 10000;							 // @brief Voltage divider resistor value for input temperature in Ohm
+static const float SUPPLY_VOLTAGE = 3.3;										 // @brief Maximum Voltage ADC input
+static const int SAMPLE_TIME_TEMP_IN = 100;										 // @brief Sample rate to build the median in milliseconds
+static const int UPDATE_TIME_TEMP_IN = 10000;									 // @brief Update every n ms the input temperature
+static const int SAMPLE_CNT_TEMP_IN = UPDATE_TIME_TEMP_IN / SAMPLE_TIME_TEMP_IN; // @brief Amount of samples for input thermistor median calculation
 
-static const bool debug = true;
-static const byte gpioTermistorIn = 36;
-static const int webUiUpdateTime = 10000;		  // Update time for Web UI in milliseconds
-static const int deviderResistanceTempIn = 10000; // Voltage divider resistor value for input temperature in Ohm
-static const float supplyVoltage = 3.3;			  // Maximum Voltage ADC input
-static const int sampleTimeTempIn = 100;		  // Sample rate to build the median in milliseconds
-static const int updateTimeTempIn = 10000;		  // Update every n ms the input temperature
-static const int sampleCntTempIn = updateTimeTempIn / sampleTimeTempIn;
-RunningMedian thermistorInSamples = RunningMedian(sampleCntTempIn);
-ThermistorCalc *thermistorIn = new ThermistorCalc(-40, 167820, 25, 6523, 120, 302);	 // Values taken from Panasonic PAW-A2W-TSOD
-ThermistorCalc *thermistorOut = new ThermistorCalc(-40, 167820, 25, 6523, 120, 302); // Values taken from Panasonic PAW-A2W-TSOD for Panasonic T-Cap 16 KW Kit-WQC16H9E8
-Timer<> webUiUpdateTimer = timer_create_default();
-Timer<> weatherApiUpdateTimer = timer_create_default();
-Timer<> thermistorInUpdateTimer = timer_create_default();
+RunningMedian thermistorInSamples = RunningMedian(SAMPLE_CNT_TEMP_IN);
+ThermistorCalc *thermistorIn = new ThermistorCalc(-40, 167820, 25, 6523, 120, 302);	 // @brief Input for real temperature (Panasonic PAW-A2W-TSOD)
+ThermistorCalc *thermistorOut = new ThermistorCalc(-40, 167820, 25, 6523, 120, 302); // @brief Output that simulates a Panasonic PAW-A2W-TSOD for the Panasonic T-Cap 16 KW Kit-WQC16H9E8
+Timer<5, millis> _timers;
 Preferences preferences;
 WiFiManager wifiManager;
 AsyncWebServer server(80);
 ESPDash dashboard(&server);
-Card tempInCard(&dashboard, TEMPERATURE_CARD, "Temperature In", "°C");
-Card tempOutCard(&dashboard, TEMPERATURE_CARD, "Temperature Out", "°C");
+Card tempInCard(&dashboard, TEMPERATURE_CARD, "Temperature Sensor", "°C");
+Card tempApiCard(&dashboard, TEMPERATURE_CARD, "Temperature API", "°C");
+Card tempOutCard(&dashboard, TEMPERATURE_CARD, "Temperature Output", "°C");
 Card tempOffsetCard(&dashboard, SLIDER_CARD, "Temperature Offset", "", 0, 15, 1);
 Card manualModeCard(&dashboard, BUTTON_CARD, "Manual Mode");
 Card manualTempCard(&dashboard, SLIDER_CARD, "Manual Temperature", "", -18, 40, 1);
+SPIClass *vspi;
 
 String weatherApiUrl;
-bool inputThermistorConnected;
 bool manualMode;
 int tempOffset;
 int tempManual;
-float thermistorInTemperature;
+float thermistorInTemperature = NAN;
+float weatherApiInTemperature = NAN;
+float outputTemperature = NAN;
 
 /// @brief Logs the given message if debug is active
 void DebugLog(String message)
 {
-	if (debug)
+	if (DEBUG_LOGGING)
 	{
 		Serial.println(message);
 	}
@@ -59,12 +64,18 @@ void DebugLog(String message)
 float readAdcVoltageCorrected(byte gpio)
 {
 	u_int16_t reading = analogRead(gpio);
-	if (reading < 1 || reading > 4095)
+	if (reading < 1)
 	{
 		return 0;
 	}
 
-	// Pre-calculated for 3.3V from 0 - 4095
+	if (reading > 3757)
+	{
+		// From 3.0284V on we use the normal calculation, since the Polynomial curve will drift away and will never reach 3.3V (max out at 3.14V)
+		return SUPPLY_VOLTAGE / 4095.0f * reading;
+	}
+
+	// Pre-calculated polynomial curve from https://github.com/G6EJD/ESP32-ADC-Accuracy-Improvement-function
 	return -0.000000000000016 * pow(reading, 4) + 0.000000000118171 * pow(reading, 3) - 0.000000301211691 * pow(reading, 2) + 0.001109019271794 * reading + 0.034143524634089;
 }
 
@@ -78,11 +89,12 @@ void updateWeatherApi()
 
 	if (WiFi.status() != WL_CONNECTED)
 	{
+		weatherApiInTemperature = NAN;
 		DebugLog("updateWeatherApi: WiFi not connected");
 		return;
 	}
 
-	HTTPClient http;	
+	HTTPClient http;
 	http.begin(weatherApiUrl);
 	int httpCode = http.GET();
 	if (httpCode != 200)
@@ -92,12 +104,14 @@ void updateWeatherApi()
 		DeserializationError error = deserializeJson(doc, http.getString());
 		if (error)
 		{
+			weatherApiInTemperature = NAN;
 			http.end();
 			return;
 		}
 
-		String message = doc["message"];
-		DebugLog("updateWeatherApi: Message = " + message);
+		String errMessage = doc["message"];
+		DebugLog("updateWeatherApi: Message = " + errMessage);
+		weatherApiInTemperature = NAN;
 		http.end();
 		return;
 	}
@@ -109,22 +123,22 @@ void updateWeatherApi()
 	DeserializationError error = deserializeJson(doc, response);
 	if (error)
 	{
+		DebugLog("updateWeatherApi: DeserializationError = " + String(error.c_str()));
+		weatherApiInTemperature = NAN;
 		http.end();
 		return;
 	}
 
-	float temp = doc["main"]["temp"];
-	DebugLog("updateWeatherApi: Temperature = " + String(temp));
+	float temperature = doc["main"]["temp"];
+	DebugLog("updateWeatherApi: Temperature = " + String(temperature));
+	weatherApiInTemperature = temperature;
 	http.end();
 }
 
 /// @brief Put your main code here, to run repeatedly:
 void loop()
 {
-	// TODO: use timer pool because it is easier?!?
-	webUiUpdateTimer.tick();
-	weatherApiUpdateTimer.tick();
-	thermistorInUpdateTimer.tick();
+	_timers.tick();
 	wifiManager.process();
 }
 
@@ -145,9 +159,9 @@ void setupPreferences()
 
 	// Get the counter value, if the key does not exist, return a default value of 0
 	// Note: Key name is limited to 15 chars.
-	manualMode = preferences.getBool(KEY_MANUAL_MODE, false);
-	tempOffset = preferences.getInt(KEY_TEMP_OFFSET, false);
-	tempManual = preferences.getInt(KEY_TEMP_MANUAL, false);
+	manualMode = preferences.getBool(PREF_KEY_MANUAL_MODE, false);
+	tempOffset = preferences.getInt(PREF_KEY_TEMP_OFFSET, 0);
+	tempManual = preferences.getInt(PREF_KEY_TEMP_MANUAL, 15);
 
 	// Store the counter to the Preferences
 	// preferences.putUInt("counter", counter);
@@ -156,13 +170,19 @@ void setupPreferences()
 /// @brief Setup for Web UI (called by setupWifiManager after auto connect)
 void setupWebUi()
 {
+	tempInCard.update(thermistorInTemperature);
+	tempApiCard.update(weatherApiInTemperature);
+	tempOutCard.update(outputTemperature);
+	dashboard.sendUpdates();
+
 	// Call Web UI update every N ms without blocking
-	webUiUpdateTimer.every(
-		webUiUpdateTime,
+	_timers.every(
+		WEB_UI_UPDATE_CYCLE,
 		[](void *opaque) -> bool
 		{
 			tempInCard.update(thermistorInTemperature);
-			tempOutCard.update((int)random(-200, 1000) * 0.1f);
+			tempApiCard.update(weatherApiInTemperature);
+			tempOutCard.update(outputTemperature);
 			dashboard.sendUpdates();
 			return true; // Keep timer running
 		});
@@ -177,7 +197,7 @@ void setupWebUi()
 				tempOffset = value;
 				tempOffsetCard.update(tempOffset);
 				dashboard.sendUpdates();
-				preferences.putInt(KEY_TEMP_OFFSET, tempOffset);
+				preferences.putInt(PREF_KEY_TEMP_OFFSET, tempOffset);
 			}
 		});
 
@@ -191,7 +211,7 @@ void setupWebUi()
 				tempManual = value;
 				manualTempCard.update(tempManual);
 				dashboard.sendUpdates();
-				preferences.putInt(KEY_TEMP_MANUAL, tempManual);
+				preferences.putInt(PREF_KEY_TEMP_MANUAL, tempManual);
 			}
 		});
 
@@ -205,7 +225,7 @@ void setupWebUi()
 				manualModeCard.update(value);
 				dashboard.sendUpdates();
 				manualMode = value == 1;
-				preferences.putBool(KEY_MANUAL_MODE, manualMode);
+				preferences.putBool(PREF_KEY_MANUAL_MODE, manualMode);
 			}
 		});
 
@@ -265,7 +285,7 @@ void setupWeatherApi()
 
 	DebugLog("setupWeatherApi: weatherApiUrl = " + weatherApiUrl);
 	updateWeatherApi(); // initial weather update
-	weatherApiUpdateTimer.every(
+	_timers.every(
 		600000, // Every 10 minutes
 		[](void *opaque) -> bool
 		{
@@ -277,30 +297,42 @@ void setupWeatherApi()
 /// @brief Setup reading of input thermistor
 void setupThermistorInputReading()
 {
-	thermistorInUpdateTimer.every(
-		sampleTimeTempIn,
+	_timers.every(
+		SAMPLE_TIME_TEMP_IN,
 		[](void *opaque) -> bool
 		{
-			double voltageIn = readAdcVoltageCorrected(gpioTermistorIn);
-			inputThermistorConnected = voltageIn > 0;
-			if (!inputThermistorConnected)
+			float voltageIn = readAdcVoltageCorrected(GPIO_THERMISTOR_IN);
+			if (!(voltageIn > 0))
 			{
-				if (thermistorInSamples.getCount() > 0)
+				if (thermistorInTemperature != NAN)
 				{
 					thermistorInSamples.clear();
-					thermistorInTemperature = -273.15;
+					thermistorInTemperature = NAN;
+					DebugLog("thermistorInUpdateTimer: No thermistor connected.");
 				}
 
 				return true; // Keep timer running
 			}
 
-			double thermistorResistance = deviderResistanceTempIn * voltageIn / (supplyVoltage - voltageIn);
-			double tempIn = thermistorIn->celsiusFromResistance(thermistorResistance);
-			thermistorInSamples.add(tempIn);
-			if ((thermistorInSamples.getCount() % sampleCntTempIn) == 0)
+			float thermistorResistance = DEVIDER_RESISTANCE_TEMP_IN * voltageIn / (SUPPLY_VOLTAGE - voltageIn);
+			if (thermistorResistance == infinityf())
 			{
-				thermistorInTemperature = thermistorInSamples.getAverage(sampleCntTempIn);
-				DebugLog("thermistorInUpdateTimer: TemperatureIn = " + String(thermistorInTemperature));
+				if (thermistorInTemperature != NAN)
+				{
+					thermistorInSamples.clear();
+					thermistorInTemperature = NAN;
+					DebugLog("thermistorInUpdateTimer: No thermistor resistance unplausible or devider resistor defect.");
+				}
+
+				return true; // Keep timer running
+			}
+
+			float tempIn = thermistorIn->celsiusFromResistance(thermistorResistance);
+			thermistorInSamples.add(tempIn);
+			if ((thermistorInSamples.getCount() % SAMPLE_CNT_TEMP_IN) == 0)
+			{
+				thermistorInTemperature = thermistorInSamples.getMedianAverage(SAMPLE_CNT_TEMP_IN);
+				DebugLog("thermistorInUpdateTimer: thermistorInTemperature = " + String(thermistorInTemperature));
 				thermistorInSamples.clear();
 			}
 
@@ -308,17 +340,36 @@ void setupThermistorInputReading()
 		});
 }
 
+/// @brief Setup digital potentiometer for output temperature
+void setupOutputTemp()
+{
+	// TODO: Disable failover on other location
+	// pinMode(GPIO_FAILOVER_OUT, OUTPUT);
+	// digitalWrite(GPIO_FAILOVER_OUT, ledOn ? LOW : HIGH);
+
+	vspi = new SPIClass(SPI_BUS_THERMISTOR_OUT);
+	vspi->begin();
+	pinMode(vspi->pinSS(), OUTPUT);
+
+	// auto result = vspi->transfer16(0);
+	// DebugLog("setupOutputTemp: set 0 result = " + String(result));
+	// delay(5000);
+	// result = vspi->transfer16(256);
+	// DebugLog("setupOutputTemp: set 100 result = " + String(result));
+}
+
 /// @brief Put your setup code here, to run once:
 void setup()
 {
-	if (debug)
+	if (DEBUG_LOGGING)
 	{
 		Serial.begin(115200);
 		delay(2000); // Delay for serial monitor attach
 	}
 
 	setupPreferences();
+	setupThermistorInputReading();
+	setupOutputTemp();
 	setupWifiManager();
 	setupWeatherApi();
-	setupThermistorInputReading();
 }
