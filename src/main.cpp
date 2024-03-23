@@ -12,44 +12,48 @@
 #include "ThermistorCalc.h"
 #include "Secrets.h"
 
-static const bool DEBUG_LOGGING = true;											 // @brief Enable/disable logs to Serial println
-static const uint8_t SPI_BUS_THERMISTOR_OUT = VSPI;								 // @brief SPI bus used for digital potentiometer for output temperature
-static const char *PREF_KEY_MANUAL_MODE = "ManualMode";							 // @brief Preferences key for manual mode
-static const char *PREF_KEY_TEMP_OFFSET = "TempOffet";							 // @brief Preferences key for temperature offset
-static const char *PREF_KEY_TEMP_MANUAL = "TempManual";							 // @brief Preferences key for manual temperature
-static const byte GPIO_THERMISTOR_IN = 36;										 // @brief GPIO used for real input temperature from thermistor
-static const byte GPIO_FAILOVER_OUT = 27;										 // @brief GPIO used for real input temperature from thermistor
-static const float NO_TEMPERATURE = -273.15;									 // @brief Replacement value for none valid temperature
-static const int WEB_UI_UPDATE_CYCLE = 10000;									 // @brief Update time for Web UI in milliseconds
-static const int DEVIDER_RESISTANCE_TEMP_IN = 10000;							 // @brief Voltage divider resistor value for input temperature in Ohm
-static const float SUPPLY_VOLTAGE = 3.3;										 // @brief Maximum Voltage ADC input
-static const int SAMPLE_TIME_TEMP_IN = 100;										 // @brief Sample rate to build the median in milliseconds
-static const int UPDATE_TIME_TEMP_IN = 10000;									 // @brief Update every n ms the input temperature
-static const int SAMPLE_CNT_TEMP_IN = UPDATE_TIME_TEMP_IN / SAMPLE_TIME_TEMP_IN; // @brief Amount of samples for input thermistor median calculation
+static const bool DEBUG_LOGGING = true;														// @brief Enable/disable logs to Serial println
+static const uint8_t SPI_BUS_THERMISTOR_OUT = VSPI;											// @brief SPI bus used for digital potentiometer for output temperature
+static const char *PREF_KEY_MANUAL_MODE = "ManualMode";										// @brief Preferences key for manual mode
+static const char *PREF_KEY_TEMP_OFFSET = "TempOffet";										// @brief Preferences key for temperature offset
+static const char *PREF_KEY_TEMP_MANUAL = "TempManual";										// @brief Preferences key for manual temperature
+static const byte GPIO_THERMISTOR_IN = 36;													// @brief GPIO used for real input temperature from thermistor
+static const byte GPIO_FAILOVER_OUT = 27;													// @brief GPIO used for real input temperature from thermistor
+static const unsigned int WEB_UI_UPDATE_CYCLE = 10000;										// @brief Update time for Web UI in milliseconds
+static const float SUPPLY_VOLTAGE = 3.3;													// @brief Maximum Voltage ADC input
+static const unsigned int WEATHER_API_UPDATE_CYCLE = 600000;								// @brief Update time of the temperture by the weather API in milliseconds
+static const unsigned int TEMP_OUT_UPDATE_CYCLE = 10000;									// @brief Update time of the output temperature in milliseconds
+static const unsigned int TEMP_IN_DEVIDER_RESISTANCE = 10000;								// @brief Voltage divider resistor value for input temperature in Ohm
+static const unsigned int TEMP_IN_SAMPLE_CYCLE = 100;										// @brief Sample rate to build the median in milliseconds
+static const unsigned int TEMP_IN_UPDATE_CYCLE = 10000;										// @brief Update every n ms the input temperature
+static const unsigned int TEMP_IN_SAMPLE_CNT = TEMP_IN_UPDATE_CYCLE / TEMP_IN_SAMPLE_CYCLE; // @brief Amount of samples for input thermistor median calculation
+static const unsigned int DIGI_POTI_STEPS = 256;											// @brief Maximum amount of steps that the digital potentiometer supports
+static const unsigned int DIGI_POTI_STEPMIN = 9;											// @brief Minimum step of the digital potentiometer to limit maximum current
+static const float DIGI_POTI_RESISTANCE = 100000.0f;										// @brief Maximum resistance of the digital potentiometer in Ohm
 
-RunningMedian thermistorInSamples = RunningMedian(SAMPLE_CNT_TEMP_IN);
-ThermistorCalc *thermistorIn = new ThermistorCalc(-40, 167820, 25, 6523, 120, 302);	 // @brief Input for real temperature (Panasonic PAW-A2W-TSOD)
-ThermistorCalc *thermistorOut = new ThermistorCalc(-40, 167820, 25, 6523, 120, 302); // @brief Output that simulates a Panasonic PAW-A2W-TSOD for the Panasonic T-Cap 16 KW Kit-WQC16H9E8
+RunningMedian _thermistorInMedian = RunningMedian(TEMP_IN_SAMPLE_CNT);
+ThermistorCalc *_thermistorIn = new ThermistorCalc(-40, 167820, 25, 6523, 120, 302);  // @brief Input for real temperature (Panasonic PAW-A2W-TSOD)
+ThermistorCalc *_thermistorOut = new ThermistorCalc(-40, 167820, 25, 6523, 120, 302); // @brief Output that simulates a Panasonic PAW-A2W-TSOD for the Panasonic T-Cap 16 KW Kit-WQC16H9E8
 Timer<5, millis> _timers;
-Preferences preferences;
-WiFiManager wifiManager;
-AsyncWebServer server(80);
-ESPDash dashboard(&server);
-Card tempInCard(&dashboard, TEMPERATURE_CARD, "Temperature Sensor", "°C");
-Card tempApiCard(&dashboard, TEMPERATURE_CARD, "Temperature API", "°C");
-Card tempOutCard(&dashboard, TEMPERATURE_CARD, "Temperature Output", "°C");
-Card tempOffsetCard(&dashboard, SLIDER_CARD, "Temperature Offset", "", 0, 15, 1);
-Card manualModeCard(&dashboard, BUTTON_CARD, "Manual Mode");
-Card manualTempCard(&dashboard, SLIDER_CARD, "Manual Temperature", "", -18, 40, 1);
-SPIClass *vspi;
-
-String weatherApiUrl;
-bool manualMode;
-int tempOffset;
-int tempManual;
-float thermistorInTemperature = NAN;
-float weatherApiInTemperature = NAN;
-float outputTemperature = NAN;
+Preferences _preferences;
+WiFiManager _wifiManager;
+AsyncWebServer _serverWebUi(80);
+ESPDash _dashboard(&_serverWebUi);
+Card _tempInCard(&_dashboard, TEMPERATURE_CARD, "Temperature Sensor", "°C");
+Card _tempApiCard(&_dashboard, TEMPERATURE_CARD, "Temperature API", "°C");
+Card _tempOutCard(&_dashboard, TEMPERATURE_CARD, "Temperature Output", "°C");
+Card _tempOffsetCard(&_dashboard, SLIDER_CARD, "Temperature Offset", "", 0, 15, 1);
+Card _manualModeCard(&_dashboard, BUTTON_CARD, "Manual Mode");
+Card _manualTempCard(&_dashboard, SLIDER_CARD, "Manual Temperature", "", -18, 40, 1);
+SPIClass *_spiDigitalPoti;
+String _weatherApiUrl;
+bool _manualMode;
+int _temperatureOffset;
+int _temperatureManual;
+float _thermistorInTemperature = NAN;
+float _weatherApiInTemperature = NAN;
+float _outputTemperature = NAN;
+unsigned int _digiPotPosition = DIGI_POTI_STEPS / 2;
 
 /// @brief Logs the given message if debug is active
 void DebugLog(String message)
@@ -79,23 +83,23 @@ float readAdcVoltageCorrected(byte gpio)
 	return -0.000000000000016 * pow(reading, 4) + 0.000000000118171 * pow(reading, 3) - 0.000000301211691 * pow(reading, 2) + 0.001109019271794 * reading + 0.034143524634089;
 }
 
-///	@brief Updates the temperature via API from OpenWeatherMap
+///	@brief Updates the temperature via API from OpenWeatherMap see https://openweathermap.org/current
 void updateWeatherApi()
 {
-	if (weatherApiUrl.length() < 1)
+	if (_weatherApiUrl.length() < 1)
 	{
 		return;
 	}
 
 	if (WiFi.status() != WL_CONNECTED)
 	{
-		weatherApiInTemperature = NAN;
+		_weatherApiInTemperature = NAN;
 		DebugLog("updateWeatherApi: WiFi not connected");
 		return;
 	}
 
 	HTTPClient http;
-	http.begin(weatherApiUrl);
+	http.begin(_weatherApiUrl);
 	int httpCode = http.GET();
 	if (httpCode != 200)
 	{
@@ -104,14 +108,14 @@ void updateWeatherApi()
 		DeserializationError error = deserializeJson(doc, http.getString());
 		if (error)
 		{
-			weatherApiInTemperature = NAN;
+			_weatherApiInTemperature = NAN;
 			http.end();
 			return;
 		}
 
 		String errMessage = doc["message"];
 		DebugLog("updateWeatherApi: Message = " + errMessage);
-		weatherApiInTemperature = NAN;
+		_weatherApiInTemperature = NAN;
 		http.end();
 		return;
 	}
@@ -124,22 +128,65 @@ void updateWeatherApi()
 	if (error)
 	{
 		DebugLog("updateWeatherApi: DeserializationError = " + String(error.c_str()));
-		weatherApiInTemperature = NAN;
+		_weatherApiInTemperature = NAN;
 		http.end();
 		return;
 	}
 
 	float temperature = doc["main"]["temp"];
 	DebugLog("updateWeatherApi: Temperature = " + String(temperature));
-	weatherApiInTemperature = temperature;
+	_weatherApiInTemperature = temperature;
 	http.end();
+}
+
+// @brief Updates the output temperature based on the input sensor, weather API or manual temperature
+void updateOutputTemperature()
+{
+	float outTemp;
+	if (_manualMode)
+	{
+		outTemp = _temperatureManual;
+	}
+	else
+	{
+		if (!isnanf(_thermistorInTemperature))
+		{
+			outTemp = _thermistorInTemperature + _temperatureOffset;
+		}
+		else
+		{
+			if (!isnanf(_weatherApiInTemperature))
+			{
+				outTemp = _weatherApiInTemperature + _temperatureOffset;
+			}
+			else
+			{
+				// TODO: Try getting anouther fallback like the last known temperature saved in preferences?
+				outTemp = _temperatureManual;
+			}
+		}
+	}
+
+	_outputTemperature = outTemp;
+
+	float resistance = _thermistorOut->resistanceFromCelsius(outTemp);
+	unsigned int pos = roundf(resistance / (DIGI_POTI_RESISTANCE / DIGI_POTI_STEPS));
+	DebugLog("updateOutputTemperature: outTemp=" + String(outTemp) + " resistance=" + String(resistance) + " pos=" + String(pos));
+	pos = constrain(pos, DIGI_POTI_STEPMIN, DIGI_POTI_STEPS - 1);
+	if (_digiPotPosition != pos)
+	{
+		_spiDigitalPoti->transfer16(pos);
+		_digiPotPosition = pos;
+	}
+
+	digitalWrite(GPIO_FAILOVER_OUT, HIGH);
 }
 
 /// @brief Put your main code here, to run repeatedly:
 void loop()
 {
 	_timers.tick();
-	wifiManager.process();
+	_wifiManager.process();
 }
 
 /// @brief Configure Preferences for storing data
@@ -149,87 +196,87 @@ void setupPreferences()
 	// has to use a namespace name to prevent key name collisions. We will open storage in
 	// RW-mode (second parameter has to be false).
 	// Note: Namespace name is limited to 15 chars.
-	preferences.begin("HeatPumpChamp", false);
+	_preferences.begin("HeatPumpChamp", false);
 
 	// TODO: Add into WebUI
-	// Remove all preferences under the opened namespace
-	// preferences.clear();
+	// Remove all _preferences under the opened namespace
+	// _preferences.clear();
 	// Or remove the counter key only
-	// preferences.remove("counter");
+	// _preferences.remove("counter");
 
 	// Get the counter value, if the key does not exist, return a default value of 0
 	// Note: Key name is limited to 15 chars.
-	manualMode = preferences.getBool(PREF_KEY_MANUAL_MODE, false);
-	tempOffset = preferences.getInt(PREF_KEY_TEMP_OFFSET, 0);
-	tempManual = preferences.getInt(PREF_KEY_TEMP_MANUAL, 15);
+	_manualMode = _preferences.getBool(PREF_KEY_MANUAL_MODE, false);
+	_temperatureOffset = _preferences.getInt(PREF_KEY_TEMP_OFFSET, 0);
+	_temperatureManual = _preferences.getInt(PREF_KEY_TEMP_MANUAL, 15);
 
 	// Store the counter to the Preferences
-	// preferences.putUInt("counter", counter);
+	// _preferences.putUInt("counter", counter);
 }
 
 /// @brief Setup for Web UI (called by setupWifiManager after auto connect)
 void setupWebUi()
 {
-	tempInCard.update(thermistorInTemperature);
-	tempApiCard.update(weatherApiInTemperature);
-	tempOutCard.update(outputTemperature);
-	dashboard.sendUpdates();
+	_tempInCard.update(_thermistorInTemperature);
+	_tempApiCard.update(_weatherApiInTemperature);
+	_tempOutCard.update(_outputTemperature);
+	_dashboard.sendUpdates();
 
 	// Call Web UI update every N ms without blocking
 	_timers.every(
 		WEB_UI_UPDATE_CYCLE,
 		[](void *opaque) -> bool
 		{
-			tempInCard.update(thermistorInTemperature);
-			tempApiCard.update(weatherApiInTemperature);
-			tempOutCard.update(outputTemperature);
-			dashboard.sendUpdates();
+			_tempInCard.update(_thermistorInTemperature);
+			_tempApiCard.update(_weatherApiInTemperature);
+			_tempOutCard.update(_outputTemperature);
+			_dashboard.sendUpdates();
 			return true; // Keep timer running
 		});
 
-	tempOffsetCard.update(tempOffset); // Set value from stored config
-	tempOffsetCard.attachCallback(
+	_tempOffsetCard.update(_temperatureOffset); // Set value from stored config
+	_tempOffsetCard.attachCallback(
 		[&](int value)
 		{
-			DebugLog("tempOffsetCard: Slider Callback Triggered: " + String(value));
-			if (tempOffset != value)
+			DebugLog("_tempOffsetCard: Slider Callback Triggered: " + String(value));
+			if (_temperatureOffset != value)
 			{
-				tempOffset = value;
-				tempOffsetCard.update(tempOffset);
-				dashboard.sendUpdates();
-				preferences.putInt(PREF_KEY_TEMP_OFFSET, tempOffset);
+				_temperatureOffset = value;
+				_tempOffsetCard.update(_temperatureOffset);
+				_dashboard.sendUpdates();
+				_preferences.putInt(PREF_KEY_TEMP_OFFSET, _temperatureOffset);
 			}
 		});
 
-	manualTempCard.update(tempManual); // Set value from stored config
-	manualTempCard.attachCallback(
+	_manualTempCard.update(_temperatureManual); // Set value from stored config
+	_manualTempCard.attachCallback(
 		[&](int value)
 		{
-			DebugLog("manualTempCard: Slider Callback Triggered: " + String(value));
-			if (tempManual != value)
+			DebugLog("_manualTempCard: Slider Callback Triggered: " + String(value));
+			if (_temperatureManual != value)
 			{
-				tempManual = value;
-				manualTempCard.update(tempManual);
-				dashboard.sendUpdates();
-				preferences.putInt(PREF_KEY_TEMP_MANUAL, tempManual);
+				_temperatureManual = value;
+				_manualTempCard.update(_temperatureManual);
+				_dashboard.sendUpdates();
+				_preferences.putInt(PREF_KEY_TEMP_MANUAL, _temperatureManual);
 			}
 		});
 
-	manualModeCard.update(manualMode ? 1 : 0); // Set value from stored config
-	manualModeCard.attachCallback(
+	_manualModeCard.update(_manualMode ? 1 : 0); // Set value from stored config
+	_manualModeCard.attachCallback(
 		[&](int value)
 		{
-			DebugLog("manualModeCard: Button Callback Triggered: " + String((value == 1) ? "true" : "false"));
-			if (manualMode != (value == 1))
+			DebugLog("_manualModeCard: Button Callback Triggered: " + String((value == 1) ? "true" : "false"));
+			if (_manualMode != (value == 1))
 			{
-				manualModeCard.update(value);
-				dashboard.sendUpdates();
-				manualMode = value == 1;
-				preferences.putBool(PREF_KEY_MANUAL_MODE, manualMode);
+				_manualModeCard.update(value);
+				_dashboard.sendUpdates();
+				_manualMode = value == 1;
+				_preferences.putBool(PREF_KEY_MANUAL_MODE, _manualMode);
 			}
 		});
 
-	server.begin();
+	_serverWebUi.begin();
 }
 
 /// @brief Setup for WiFiManager as none blocking implementation
@@ -242,12 +289,12 @@ void setupWifiManager()
 	// reset settings - wipe credentials for testing
 	// wm.resetSettings();
 
-	wifiManager.setConfigPortalBlocking(false);
-	wifiManager.setConfigPortalTimeout(600);
+	_wifiManager.setConfigPortalBlocking(false);
+	_wifiManager.setConfigPortalTimeout(600);
 
 	// automatically connect using saved credentials if they exist
 	// If connection fails it starts an access point with the specified name
-	if (wifiManager.autoConnect(wifiManager.getDefaultAPName().c_str(), "123456789"))
+	if (_wifiManager.autoConnect(_wifiManager.getDefaultAPName().c_str(), "123456789"))
 	{
 		DebugLog("setupWifiManager: Connected!");
 		setupWebUi();
@@ -270,12 +317,12 @@ void setupWeatherApi()
 	if (WEATHER_CITY_ID > 0)
 	{
 		DebugLog("setupWeatherApi: Using City ID");
-		weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=" + String(WEATHER_CITY_ID) + "&lang=en" + "&units=METRIC" + "&appid=" + WEATHER_API_KEY;
+		_weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=" + String(WEATHER_CITY_ID) + "&lang=en" + "&units=METRIC" + "&appid=" + WEATHER_API_KEY;
 	}
 	else if (WEATHER_LATITUDE != 0 && WEATHER_LONGITUDE != 0)
 	{
 		DebugLog("setupWeatherApi: Using Latitude and Longitude");
-		weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?lat=" + String(WEATHER_LATITUDE, 6) + "&lon=" + String(WEATHER_LONGITUDE, 6) + "&lang=en" + "&units=METRIC" + "&appid=" + WEATHER_API_KEY;
+		_weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?lat=" + String(WEATHER_LATITUDE, 6) + "&lon=" + String(WEATHER_LONGITUDE, 6) + "&lang=en" + "&units=METRIC" + "&appid=" + WEATHER_API_KEY;
 	}
 	else
 	{
@@ -283,10 +330,10 @@ void setupWeatherApi()
 		return;
 	}
 
-	DebugLog("setupWeatherApi: weatherApiUrl = " + weatherApiUrl);
+	DebugLog("setupWeatherApi: _weatherApiUrl = " + _weatherApiUrl);
 	updateWeatherApi(); // initial weather update
 	_timers.every(
-		600000, // Every 10 minutes
+		WEATHER_API_UPDATE_CYCLE,
 		[](void *opaque) -> bool
 		{
 			updateWeatherApi();
@@ -298,42 +345,42 @@ void setupWeatherApi()
 void setupThermistorInputReading()
 {
 	_timers.every(
-		SAMPLE_TIME_TEMP_IN,
+		TEMP_IN_SAMPLE_CYCLE,
 		[](void *opaque) -> bool
 		{
 			float voltageIn = readAdcVoltageCorrected(GPIO_THERMISTOR_IN);
 			if (!(voltageIn > 0))
 			{
-				if (thermistorInTemperature != NAN)
+				if (!isnanf(_thermistorInTemperature))
 				{
-					thermistorInSamples.clear();
-					thermistorInTemperature = NAN;
-					DebugLog("thermistorInUpdateTimer: No thermistor connected.");
+					_thermistorInMedian.clear();
+					_thermistorInTemperature = NAN;
+					DebugLog("thermistorInUpdateTimer: Voltage unplausible or devider resistor defect. voltageIn = " + String(voltageIn));
 				}
 
 				return true; // Keep timer running
 			}
 
-			float thermistorResistance = DEVIDER_RESISTANCE_TEMP_IN * voltageIn / (SUPPLY_VOLTAGE - voltageIn);
+			float thermistorResistance = TEMP_IN_DEVIDER_RESISTANCE * voltageIn / (SUPPLY_VOLTAGE - voltageIn);
 			if (thermistorResistance == infinityf())
 			{
-				if (thermistorInTemperature != NAN)
+				if (!isnanf(_thermistorInTemperature))
 				{
-					thermistorInSamples.clear();
-					thermistorInTemperature = NAN;
-					DebugLog("thermistorInUpdateTimer: No thermistor resistance unplausible or devider resistor defect.");
+					_thermistorInMedian.clear();
+					_thermistorInTemperature = NAN;
+					DebugLog("thermistorInUpdateTimer: No external temperature sensor connected. thermistorResistance = " + String(thermistorResistance));
 				}
 
 				return true; // Keep timer running
 			}
 
-			float tempIn = thermistorIn->celsiusFromResistance(thermistorResistance);
-			thermistorInSamples.add(tempIn);
-			if ((thermistorInSamples.getCount() % SAMPLE_CNT_TEMP_IN) == 0)
+			float tempIn = _thermistorIn->celsiusFromResistance(thermistorResistance);
+			_thermistorInMedian.add(tempIn);
+			if ((_thermistorInMedian.getCount() % TEMP_IN_SAMPLE_CNT) == 0)
 			{
-				thermistorInTemperature = thermistorInSamples.getMedianAverage(SAMPLE_CNT_TEMP_IN);
-				DebugLog("thermistorInUpdateTimer: thermistorInTemperature = " + String(thermistorInTemperature));
-				thermistorInSamples.clear();
+				_thermistorInTemperature = _thermistorInMedian.getMedianAverage(TEMP_IN_SAMPLE_CNT);
+				DebugLog("thermistorInUpdateTimer: _thermistorInTemperature = " + String(_thermistorInTemperature));
+				_thermistorInMedian.clear();
 			}
 
 			return true; // Keep timer running
@@ -341,21 +388,21 @@ void setupThermistorInputReading()
 }
 
 /// @brief Setup digital potentiometer for output temperature
-void setupOutputTemp()
+void setupOutputTemperature()
 {
-	// TODO: Disable failover on other location
-	// pinMode(GPIO_FAILOVER_OUT, OUTPUT);
-	// digitalWrite(GPIO_FAILOVER_OUT, ledOn ? LOW : HIGH);
+	_spiDigitalPoti = new SPIClass(SPI_BUS_THERMISTOR_OUT);
+	_spiDigitalPoti->begin();
+	pinMode(_spiDigitalPoti->pinSS(), OUTPUT);
+	pinMode(GPIO_FAILOVER_OUT, OUTPUT);
 
-	vspi = new SPIClass(SPI_BUS_THERMISTOR_OUT);
-	vspi->begin();
-	pinMode(vspi->pinSS(), OUTPUT);
-
-	// auto result = vspi->transfer16(0);
-	// DebugLog("setupOutputTemp: set 0 result = " + String(result));
-	// delay(5000);
-	// result = vspi->transfer16(256);
-	// DebugLog("setupOutputTemp: set 100 result = " + String(result));
+	updateOutputTemperature();
+	_timers.every(
+		TEMP_OUT_UPDATE_CYCLE,
+		[](void *opaque) -> bool
+		{
+			updateOutputTemperature();
+			return true;
+		});
 }
 
 /// @brief Put your setup code here, to run once:
@@ -369,7 +416,7 @@ void setup()
 
 	setupPreferences();
 	setupThermistorInputReading();
-	setupOutputTemp();
+	setupOutputTemperature();
 	setupWifiManager();
 	setupWeatherApi();
 }
