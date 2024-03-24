@@ -18,7 +18,7 @@ static const char *PREF_KEY_MANUAL_MODE = "ManualMode";										// @brief Prefe
 static const char *PREF_KEY_TEMP_OFFSET = "TempOffet";										// @brief Preferences key for temperature offset
 static const char *PREF_KEY_TEMP_MANUAL = "TempManual";										// @brief Preferences key for manual temperature
 static const byte GPIO_THERMISTOR_IN = 36;													// @brief GPIO used for real input temperature from thermistor
-static const byte GPIO_FAILOVER_OUT = 27;													// @brief GPIO used for real input temperature from thermistor
+static const byte GPIO_FAILOVER_OUT = 27;													// @brief GPIO used as digital output to signal that the output is now valid (failover via relays or LED)
 static const unsigned int WEB_UI_UPDATE_CYCLE = 10000;										// @brief Update time for Web UI in milliseconds
 static const float SUPPLY_VOLTAGE = 3.3;													// @brief Maximum Voltage ADC input
 static const unsigned int WEATHER_API_UPDATE_CYCLE = 600000;								// @brief Update time of the temperture by the weather API in milliseconds
@@ -171,10 +171,10 @@ void updateOutputTemperature()
 
 	float resistance = _thermistorOut->resistanceFromCelsius(outTemp);
 	unsigned int pos = roundf(resistance / (DIGI_POTI_RESISTANCE / DIGI_POTI_STEPS));
-	DebugLog("updateOutputTemperature: outTemp=" + String(outTemp) + " resistance=" + String(resistance) + " pos=" + String(pos));
 	pos = constrain(pos, DIGI_POTI_STEPMIN, DIGI_POTI_STEPS - 1);
 	if (_digiPotPosition != pos)
 	{
+		DebugLog("updateOutputTemperature: outTemp=" + String(outTemp) + " resistance=" + String(resistance) + " pos=" + String(pos));
 		_spiDigitalPoti->transfer16(pos);
 		_digiPotPosition = pos;
 	}
@@ -378,9 +378,13 @@ void setupThermistorInputReading()
 			_thermistorInMedian.add(tempIn);
 			if ((_thermistorInMedian.getCount() % TEMP_IN_SAMPLE_CNT) == 0)
 			{
-				_thermistorInTemperature = _thermistorInMedian.getMedianAverage(TEMP_IN_SAMPLE_CNT);
-				DebugLog("thermistorInUpdateTimer: _thermistorInTemperature = " + String(_thermistorInTemperature));
+				float inTemp = _thermistorInMedian.getMedianAverage(TEMP_IN_SAMPLE_CNT);
 				_thermistorInMedian.clear();
+				if (isnanf(_thermistorInTemperature) || abs(inTemp - _thermistorInTemperature) > 0.01)
+				{
+					DebugLog("thermistorInUpdateTimer: inTemp = " + String(inTemp));
+					_thermistorInTemperature = inTemp;
+				}
 			}
 
 			return true; // Keep timer running
