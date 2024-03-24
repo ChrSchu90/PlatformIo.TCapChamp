@@ -85,20 +85,29 @@ float readAdcVoltageCorrected(uint8_t gpioPin)
 }
 
 /// @brief Gets the current input thermistor temperature
+/// @param logError Log detected errors due to e.g. unplausible values
 /// @return the temperature of te input thermistor or NAN if there is no sensor conneted or if the value is unplausible
-float getCurrentThermistorInTemperature()
+float getCurrentThermistorInTemperature(bool logError)
 {
 	float voltage = readAdcVoltageCorrected(GPIO_THERMISTOR_IN);
 	if (!(voltage > 0))
 	{
-		DebugLog("getInputThermistorTemperature: Voltage unplausible, devider resistor defect? voltage=" + String(voltage));
+		if (logError)
+		{
+			DebugLog("getInputThermistorTemperature: Voltage unplausible, devider resistor defect? voltage=" + String(voltage));
+		}
+
 		return NAN;
 	}
 
 	float resistance = TEMP_IN_DEVIDER_RESISTANCE * voltage / (SUPPLY_VOLTAGE - voltage);
 	if (resistance == infinityf())
 	{
-		DebugLog("getInputThermistorTemperature: No external temperature sensor connected. resistance=" + String(resistance));
+		if (logError)
+		{
+			DebugLog("getInputThermistorTemperature: No external temperature sensor connected. resistance=" + String(resistance));
+		}
+
 		return NAN;
 	}
 
@@ -221,7 +230,7 @@ bool updateOutputTemperature()
 /// @return If the value has changed
 bool updateThermistorInTemperature()
 {
-	float tempIn = getCurrentThermistorInTemperature();
+	float tempIn = getCurrentThermistorInTemperature(!isnanf(_thermistorInTemperature));
 	if (isnanf(tempIn))
 	{
 		if (!isnanf(_thermistorInTemperature) || _thermistorInMedian.getCount() > 0)
@@ -256,7 +265,7 @@ void Reset()
 	// TODO: Add into WebUI
 	_preferences.clear();
 	_wifiManager.resetSettings();
-	
+
 	ESP.restart();
 }
 
@@ -410,7 +419,7 @@ void setupWeatherApi()
 void setupThermistorInputReading()
 {
 	// initial reading without building a median
-	_thermistorInTemperature = getCurrentThermistorInTemperature();
+	_thermistorInTemperature = getCurrentThermistorInTemperature(true);
 	DebugLog("setupThermistorInputReading: initial _thermistorInTemperature=" + String(_thermistorInTemperature));
 
 	_timers.every(
