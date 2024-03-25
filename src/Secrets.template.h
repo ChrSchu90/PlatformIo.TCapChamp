@@ -1,10 +1,11 @@
+
 /**
  * @brief Contains secrets like weather API key
  */
 
-#include <WString.h>
-
 #pragma once
+
+#include <WString.h>
 
 /// @brief API key for OpenWeatherMap. Can be created for free at
 /// https://home.openweathermap.org/users/sign_up (60 calls/minute or 1,000,000 calls/month)

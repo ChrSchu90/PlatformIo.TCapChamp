@@ -1,5 +1,5 @@
-# PlatformIo.HeatPumpTempChamp
-[![Build](https://github.com/ChrSchu90/PlatformIo.HeatPumpTempChamp/actions/workflows/build.yml/badge.svg)](https://github.com/ChrSchu90/PlatformIo.HeatPumpTempChamp/actions/workflows/build.yml)
+# PlatformIo.HeatPumpChamp
+[![Build](https://github.com/ChrSchu90/PlatformIo.HeatPumpChamp/actions/workflows/build.yml/badge.svg)](https://github.com/ChrSchu90/PlatformIo.HeatPumpChamp/actions/workflows/build.yml)
 
 ## Description
 Manipulates the measured temperature for heat pumps via ESP32 to adjust the cycle rate.

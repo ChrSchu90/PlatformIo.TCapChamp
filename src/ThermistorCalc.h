@@ -1,3 +1,15 @@
+/**
+ * @file ThermistorCalc.h
+ * @author ChrSchu
+ * @brief Calculates the temperature or resistance of an thermistor
+ * based on the Steinhart–Hart equation (T in degrees Kelvin):
+ * 1/T = a + b(Ln R) + c(Ln R)^3
+ * @date 2024-03-24
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #pragma once
 
 /**

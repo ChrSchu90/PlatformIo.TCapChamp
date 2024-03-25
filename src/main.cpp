@@ -28,9 +28,10 @@ static const unsigned int TEMP_IN_DEVIDER_RESISTANCE = 10000;								// Voltage 
 static const unsigned int TEMP_IN_SAMPLE_CYCLE = 100;										// Sample rate to build the median in milliseconds
 static const unsigned int TEMP_IN_UPDATE_CYCLE = 10000;										// Update every n ms the input temperature
 static const unsigned int TEMP_IN_SAMPLE_CNT = TEMP_IN_UPDATE_CYCLE / TEMP_IN_SAMPLE_CYCLE; // Amount of samples for input thermistor median calculation
-static const unsigned int DIGI_POTI_STEPS = 256;											// Maximum amount of steps that the digital potentiometer supports
-static const unsigned int DIGI_POTI_STEPMIN = 9;											// Minimum step of the digital potentiometer to limit maximum current
-static const float DIGI_POTI_RESISTANCE = 100000.0f;										// Maximum resistance of the digital potentiometer in Ohm
+static const uint16_t DIGI_POTI_STEPS = 256;												// Maximum amount of steps that the digital potentiometer supports
+static const uint16_t DIGI_POTI_STEP_MIN = 0;												// Minimum step of the digital potentiometer to limit maximum current (if no pre-resistor is used)
+static const float DIGI_POTI_RESISTANCE = 50000.0f;											// Maximum resistance of the digital potentiometer in Ohm
+static const float DIGI_POTI_PRERESISTANCE = 3333.0f;										// Digital potentiometer pre-resistor to limit current and improve precision in Ohm
 
 RunningMedian _thermistorInMedian = RunningMedian(TEMP_IN_SAMPLE_CNT);
 ThermistorCalc *_thermistorIn = new ThermistorCalc(-40, 167820, 25, 6523, 120, 302);  // Input for real temperature (Panasonic PAW-A2W-TSOD)
@@ -40,12 +41,12 @@ Preferences _preferences;
 WiFiManager _wifiManager;
 AsyncWebServer _serverWebUi(80);
 ESPDash _dashboard(&_serverWebUi);
-Card _tempInCard(&_dashboard, TEMPERATURE_CARD, "Temperature Sensor", "°C");
-Card _tempApiCard(&_dashboard, TEMPERATURE_CARD, "Temperature API", "°C");
-Card _tempOutCard(&_dashboard, TEMPERATURE_CARD, "Temperature Output", "°C");
-Card _tempOffsetCard(&_dashboard, SLIDER_CARD, "Temperature Offset", "", 0, 15, 1);
+Card _tempInCard(&_dashboard, TEMPERATURE_CARD, "Sensor", "°C");
+Card _tempApiCard(&_dashboard, TEMPERATURE_CARD, "Weather", "°C");
+Card _tempOutCard(&_dashboard, TEMPERATURE_CARD, "Output", "°C");
+Card _tempOffsetCard(&_dashboard, SLIDER_CARD, "Offset", "", -15, 15, 1);
 Card _manualModeCard(&_dashboard, BUTTON_CARD, "Manual Mode");
-Card _manualTempCard(&_dashboard, SLIDER_CARD, "Manual Temperature", "", -18, 40, 1);
+Card _manualTempCard(&_dashboard, SLIDER_CARD, "Manual", "°C", -30, 30, 1);
 SPIClass *_spiDigitalPoti;
 String _weatherApiUrl;
 bool _manualMode;
@@ -54,7 +55,6 @@ int _temperatureManual;
 float _thermistorInTemperature = NAN;
 float _weatherApiTemperature = NAN;
 float _outputTemperature = NAN;
-unsigned int _digiPotPosition = DIGI_POTI_STEPS / 2;
 
 /// @brief Logs the given message if debug is active
 void DebugLog(String message)
@@ -137,7 +137,7 @@ float getWeatherApiTemperature()
 		DebugLog("getWeatherApiTemperature: HTTP Error " + String(httpCode));
 		JsonDocument doc;
 		DeserializationError error = deserializeJson(doc, http.getString());
-		if (error)
+		if (error || !doc.containsKey("message"))
 		{
 			http.end();
 			return NAN;
@@ -158,11 +158,14 @@ float getWeatherApiTemperature()
 	if (error)
 	{
 		DebugLog("getWeatherApiTemperature: DeserializationError=" + String(error.c_str()));
+		doc.clear();
 		return NAN;
 	}
 
 	float temperature = doc["main"]["temp"];
+	doc.clear();
 	DebugLog("getWeatherApiTemperature: Temperature=" + String(temperature));
+
 	return temperature;
 }
 
@@ -180,46 +183,55 @@ bool updateWeatherApiTemperature()
 /// @return If the value has changed
 bool updateOutputTemperature()
 {
-	float outTemp = NAN;
+	float targetTemp = NAN;
 	if (_manualMode)
 	{
-		outTemp = _temperatureManual;
+		targetTemp = _temperatureManual;
 	}
 	else
 	{
 		float inTemp = _thermistorInTemperature;
 		if (!isnanf(inTemp))
 		{
-			outTemp = inTemp + _temperatureOffset;
+			targetTemp = inTemp + _temperatureOffset;
 		}
 		else
 		{
 			float apiTemp = _weatherApiTemperature;
 			if (!isnanf(apiTemp))
 			{
-				outTemp = apiTemp + _temperatureOffset;
+				targetTemp = apiTemp + _temperatureOffset;
 			}
 			else
 			{
 				// TODO: Try getting anouther fallback like the last known temperature saved in preferences?
-				outTemp = _temperatureManual;
+				targetTemp = _temperatureManual;
 			}
 		}
 	}
 
-	bool changed = _outputTemperature != outTemp;
-	_outputTemperature = outTemp;
-	if (!isnanf(outTemp))
+	bool changed = false;
+
+	if (!isnanf(targetTemp))
 	{
-		float resistance = _thermistorOut->resistanceFromCelsius(outTemp);
-		unsigned int posistion = roundf(resistance / (DIGI_POTI_RESISTANCE / DIGI_POTI_STEPS));
-		posistion = constrain(posistion, DIGI_POTI_STEPMIN, DIGI_POTI_STEPS - 1);
-		if (_digiPotPosition != posistion)
-		{
-			DebugLog("updateOutputTemperature: outTemp=" + String(outTemp) + " resistance=" + String(resistance) + " posistion=" + String(posistion));
+		float targetResistance = _thermistorOut->resistanceFromCelsius(targetTemp);
+		uint16_t posistion = targetResistance >= DIGI_POTI_PRERESISTANCE ? roundf(((targetResistance - DIGI_POTI_PRERESISTANCE) / (DIGI_POTI_RESISTANCE / (DIGI_POTI_STEPS + 1))) - 1) : 0;
+		posistion = constrain(posistion, DIGI_POTI_STEP_MIN, DIGI_POTI_STEPS);
+		float positionResistance = (DIGI_POTI_RESISTANCE / (DIGI_POTI_STEPS + 1)) + (posistion * (DIGI_POTI_RESISTANCE / (DIGI_POTI_STEPS + 1)));
+		float outputResistance = DIGI_POTI_PRERESISTANCE + positionResistance;
+		float outputTemperature = _thermistorOut->celsiusFromResistance(outputResistance);
+		if (_outputTemperature != outputTemperature)		{
+
+			DebugLog("updateOutputTemperature: targetTemp=" + String(targetTemp) + " targetResistance=" + String(targetResistance) + " posistion=" + String(posistion) + " positionResistance=" + String(positionResistance) + " outputResistance=" + String(outputResistance) + " outputTemperature=" + String(outputTemperature));
 			_spiDigitalPoti->transfer16(posistion);
-			_digiPotPosition = posistion;
+			_outputTemperature = outputTemperature;
+			changed = true;
 		}
+	}
+	else
+	{
+		changed = !isnanf(_outputTemperature);
+		_outputTemperature = targetTemp;
 	}
 
 	digitalWrite(GPIO_FAILOVER_OUT, !isnanf(_outputTemperature) ? HIGH : LOW);
