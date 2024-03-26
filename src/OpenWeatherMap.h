@@ -13,12 +13,6 @@
 #include <WString.h>
 #include <math.h>
 
-/**
- * @brief Implements the OpenWeatherMap API https://openweathermap.org/current
- * NOTE: Free API is limited to 60 calls/minute or 1,000,000 calls/month
- * A API key can be created for free at https://home.openweathermap.org/users/sign_up
- */
-
 /// @brief Represents the API response with temperature and error information if request failed
 struct ApiResponse
 {
@@ -40,7 +34,12 @@ struct ApiResponse
     const String errorMessage;
 };
 
-class OpenWeatherMapApi
+/**
+ * @brief Implements the OpenWeatherMap API https://openweathermap.org/current
+ * NOTE: Free API is limited to 60 calls/minute or 1,000,000 calls/month
+ * A API key can be created for free at https://home.openweathermap.org/users/sign_up
+ */
+class OpenWeatherMap
 {
 private:
     float _temperature;
@@ -55,13 +54,13 @@ public:
     /// @brief Creates an instance of the OpenWeatherMap API
     /// @param apiKey Your API key
     /// @param cityId The city ID can be taken from https://openweathermap.org/ by search from URL (https://openweathermap.org/city/xxxxxxx)
-    OpenWeatherMapApi(String apiKey, unsigned int cityId);
+    OpenWeatherMap(String apiKey, unsigned int cityId);
 
     /// @brief Creates an instance of the OpenWeatherMap API
     /// @param apiKey Your API key
     /// @param latitude Location latitude (can be taken from google maps with right-click)
     /// @param longitude Location longitude (can be taken from google maps with right-click)
-    OpenWeatherMapApi(String apiKey, double latitude, double longitude);
+    OpenWeatherMap(String apiKey, double latitude, double longitude);
 
     /// @brief Gets the last known valid temperature received by the API
     /// @return a valid temperature or NAN

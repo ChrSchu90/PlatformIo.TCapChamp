@@ -1,15 +1,16 @@
 #include <Arduino.h>
 #include <Preferences.h>
 #include <WiFiManager.h>
+#include <LittleFS.h>
 #include <WiFi.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <ESPDash.h>
+#include <ESPUI.h>
 #include <arduino-timer.h>
 #include <HTTPClient.h>
 #include <RunningMedian.h>
 #include <SPI.h>
+#include <stdlib.h>
 #include "ThermistorCalc.h"
+#include "Area.h"
 #include "Secrets.h"
 
 static const bool DEBUG_LOGGING = true;														// Enable/disable logs to Serial println
@@ -34,19 +35,12 @@ static const float DIGI_POTI_RESISTANCE = 50000.0f;											// Maximum resista
 static const float DIGI_POTI_PRERESISTANCE = 3333.0f;										// Digital potentiometer pre-resistor to limit current and improve precision in Ohm
 
 RunningMedian _thermistorInMedian = RunningMedian(TEMP_IN_SAMPLE_CNT);
-ThermistorCalc *_thermistorIn = new ThermistorCalc(-40, 167820, 25, 6523, 120, 302);  // Input for real temperature (Panasonic PAW-A2W-TSOD)
-ThermistorCalc *_thermistorOut = new ThermistorCalc(-40, 167820, 25, 6523, 120, 302); // Output that simulates a Panasonic PAW-A2W-TSOD for the Panasonic T-Cap 16 KW Kit-WQC16H9E8
+ThermistorCalc _thermistorIn(-40, 167820, 25, 6523, 120, 302);	// Input for real temperature (Panasonic PAW-A2W-TSOD)
+ThermistorCalc _thermistorOut(-40, 167820, 25, 6523, 120, 302); // Output that simulates a Panasonic PAW-A2W-TSOD for the Panasonic T-Cap 16 KW Kit-WQC16H9E8
 Timer<5, millis> _timers;
 Preferences _preferences;
 WiFiManager _wifiManager;
-AsyncWebServer _serverWebUi(80);
-ESPDash _dashboard(&_serverWebUi);
-Card _tempInCard(&_dashboard, TEMPERATURE_CARD, "Sensor", "°C");
-Card _tempApiCard(&_dashboard, TEMPERATURE_CARD, "Weather", "°C");
-Card _tempOutCard(&_dashboard, TEMPERATURE_CARD, "Output", "°C");
-Card _tempOffsetCard(&_dashboard, SLIDER_CARD, "Offset", "", -15, 15, 1);
-Card _manualModeCard(&_dashboard, BUTTON_CARD, "Manual Mode");
-Card _manualTempCard(&_dashboard, SLIDER_CARD, "Manual", "°C", -30, 30, 1);
+
 SPIClass *_spiDigitalPoti;
 String _weatherApiUrl;
 bool _manualMode;
@@ -111,7 +105,7 @@ float getCurrentThermistorInTemperature(bool logError)
 		return NAN;
 	}
 
-	return _thermistorIn->celsiusFromResistance(resistance);
+	return _thermistorIn.celsiusFromResistance(resistance);
 }
 
 /// @brief Gets the temperature from OpenWeatherMap see: https://openweathermap.org/current (60 calls/minute or 1,000,000 calls/month)
@@ -211,16 +205,16 @@ bool updateOutputTemperature()
 	}
 
 	bool changed = false;
-
 	if (!isnanf(targetTemp))
 	{
-		float targetResistance = _thermistorOut->resistanceFromCelsius(targetTemp);
+		float targetResistance = _thermistorOut.resistanceFromCelsius(targetTemp);
 		uint16_t posistion = targetResistance >= DIGI_POTI_PRERESISTANCE ? roundf(((targetResistance - DIGI_POTI_PRERESISTANCE) / (DIGI_POTI_RESISTANCE / (DIGI_POTI_STEPS + 1))) - 1) : 0;
 		posistion = constrain(posistion, DIGI_POTI_STEP_MIN, DIGI_POTI_STEPS);
 		float positionResistance = (DIGI_POTI_RESISTANCE / (DIGI_POTI_STEPS + 1)) + (posistion * (DIGI_POTI_RESISTANCE / (DIGI_POTI_STEPS + 1)));
 		float outputResistance = DIGI_POTI_PRERESISTANCE + positionResistance;
-		float outputTemperature = _thermistorOut->celsiusFromResistance(outputResistance);
-		if (_outputTemperature != outputTemperature)		{
+		float outputTemperature = _thermistorOut.celsiusFromResistance(outputResistance);
+		if (_outputTemperature != outputTemperature)
+		{
 
 			DebugLog("updateOutputTemperature: targetTemp=" + String(targetTemp) + " targetResistance=" + String(targetResistance) + " posistion=" + String(posistion) + " positionResistance=" + String(positionResistance) + " outputResistance=" + String(outputResistance) + " outputTemperature=" + String(outputTemperature));
 			_spiDigitalPoti->transfer16(posistion);
@@ -264,7 +258,7 @@ bool updateThermistorInTemperature()
 		{
 			DebugLog("updateThermistorInTemperature: (median) Temperature=" + String(medianTemp));
 			_thermistorInTemperature = medianTemp;
-			return false;
+			return true;
 		}
 	}
 
@@ -300,93 +294,83 @@ void setupPreferences()
 	_temperatureManual = _preferences.getInt(PREF_KEY_TEMP_MANUAL, 15);
 }
 
+uint16_t _lblSensorTemp;
+uint16_t _lblWeatherTemp;
+uint16_t _lblOutputTemp;
+uint16_t _tabManual;
+uint16_t _tabTemperature;
+uint16_t _tabPower;
+uint16_t _tabDevice;
+uint16_t _tabWifi;
+
+uint16_t _swManualMode;
+uint16_t _sldManualTemp;
+
+uint16_t _sldOffset; // TODO: Remove after moving into area
+
 /// @brief Setup for Web UI (called by setupWifiManager after auto connect)
 void setupWebUi()
 {
-	_tempInCard.update(_thermistorInTemperature);
-	_tempApiCard.update(_weatherApiTemperature);
-	_tempOutCard.update(_outputTemperature);
-	_dashboard.sendUpdates();
+	// See https://github.com/s00500/ESPUI
+	ESPUI.begin("Heat Pump Champ", nullptr, nullptr, 80);
 
-	// Call Web UI update every N ms without blocking
-	_timers.every(
-		WEB_UI_UPDATE_CYCLE,
-		[](void *opaque) -> bool
-		{
-			// unsigned long minutesSinceBoot = esp_timer_get_time() / 60000000;
-			// DebugLog("minutesSinceBoot=" + String(minutesSinceBoot));
-			_tempInCard.update(_thermistorInTemperature);
-			_tempApiCard.update(_weatherApiTemperature);
-			_tempOutCard.update(_outputTemperature);
-			_dashboard.sendUpdates();
-			return true; // Keep timer running
-		});
+	// Create global labels
+	_lblSensorTemp = ESPUI.addControl(Label, "Sensor", String(_thermistorInTemperature) + " °C", None);
+	_lblWeatherTemp = ESPUI.addControl(Label, "Weather", String(_weatherApiTemperature) + " °C", None);
+	_lblOutputTemp = ESPUI.addControl(Label, "Output", String(_outputTemperature) + " °C", None);
 
-	_tempOffsetCard.update(_temperatureOffset); // Set value from stored config
-	_tempOffsetCard.attachCallback(
-		[&](int value)
+	// Generate tabs
+	_tabManual = ESPUI.addControl(Tab, "Manual", "Manual");
+	_tabTemperature = ESPUI.addControl(Tab, "Temperature", "Temperature");
+	_tabPower = ESPUI.addControl(Tab, "Power", "Power");
+	_tabDevice = ESPUI.addControl(Tab, "Device", "Device");
+	_tabWifi = ESPUI.addControl(Tab, "WiFi", "WiFi");
+
+	_swManualMode = ESPUI.addControl(
+		Switcher, "Manual Temperature", String(_manualMode ? 1 : 0), None, _tabManual,
+		[](Control *sender, int type)
 		{
-			DebugLog("_tempOffsetCard: Slider Callback Triggered: " + String(value));
-			if (_temperatureOffset != value)
+			bool value = sender->value.toInt() > 0;
+			if (_manualMode != value)
 			{
-				_temperatureOffset = value;
-				_tempOffsetCard.update(_temperatureOffset);
-				_dashboard.sendUpdates();
-				_preferences.putInt(PREF_KEY_TEMP_OFFSET, _temperatureOffset);
+				_manualMode = value;
+				_preferences.putBool(PREF_KEY_MANUAL_MODE, _manualMode);
+				ESPUI.updateSlider(sender->id, value);
 			}
 		});
 
-	_manualTempCard.update(_temperatureManual); // Set value from stored config
-	_manualTempCard.attachCallback(
-		[&](int value)
+	_sldManualTemp = ESPUI.addControl(
+		Slider, "Temperature", String(_temperatureManual), None, _swManualMode,
+		[](Control *sender, int type)
 		{
-			DebugLog("_manualTempCard: Slider Callback Triggered: " + String(value));
+			int value = sender->value.toInt();
 			if (_temperatureManual != value)
 			{
 				_temperatureManual = value;
-				_manualTempCard.update(_temperatureManual);
-				_dashboard.sendUpdates();
-				_preferences.putInt(PREF_KEY_TEMP_MANUAL, _temperatureManual);
+				//_preferences.putInt(PREF_KEY_TEMP_MANUAL, _temperatureManual); // TODO: Enable saving
+				ESPUI.updateSlider(sender->id, value);
 			}
 		});
+	ESPUI.addControl(Min, "", "-25", None, _sldManualTemp);
+	ESPUI.addControl(Max, "", "25", None, _sldManualTemp);
+	ESPUI.addControl(Step, "", "1", None, _sldManualTemp);
 
-	_manualModeCard.update(_manualMode ? 1 : 0); // Set value from stored config
-	_manualModeCard.attachCallback(
-		[&](int value)
+	// TODO: Offset should be moved into the area
+	_sldOffset = ESPUI.addControl(
+		Slider, "Offset", String(_temperatureOffset), None, _tabTemperature,
+		[](Control *sender, int type)
 		{
-			DebugLog("_manualModeCard: Button Callback Triggered: " + String((value == 1) ? "true" : "false"));
-			if (_manualMode != (value == 1))
+			int value = sender->value.toInt();
+			if (_temperatureOffset != value)
 			{
-				_manualModeCard.update(value);
-				_dashboard.sendUpdates();
-				_manualMode = value == 1;
-				_preferences.putBool(PREF_KEY_MANUAL_MODE, _manualMode);
+				_temperatureOffset = value;
+				_preferences.putInt(PREF_KEY_TEMP_OFFSET, _temperatureOffset);
+				ESPUI.updateSlider(sender->id, value);
 			}
 		});
-
-	_serverWebUi.begin();
-}
-
-/// @brief Setup for WiFiManager as none blocking implementation
-void setupWifiManager()
-{
-	// explicitly set mode, esp defaults to STA+AP
-	WiFi.mode(WIFI_STA);
-
-	_wifiManager.setConfigPortalBlocking(false);
-	_wifiManager.setConfigPortalTimeout(600);
-
-	// automatically connect using saved credentials if they exist
-	// If connection fails it starts an access point with the specified name
-	if (_wifiManager.autoConnect(_wifiManager.getDefaultAPName().c_str(), "123456789"))
-	{
-		DebugLog("setupWifiManager: Connected!");
-		setupWebUi();
-	}
-	else
-	{
-		DebugLog("setupWifiManager: Configportal running...");
-	}
+	ESPUI.addControl(Min, "", "-15", None, _sldOffset);
+	ESPUI.addControl(Max, "", "15", None, _sldOffset);
+	ESPUI.addControl(Step, "", "1", None, _sldOffset);
 }
 
 /// @brief Setup for Weather API
@@ -422,9 +406,56 @@ void setupWeatherApi()
 		WEATHER_API_UPDATE_CYCLE,
 		[](void *opaque) -> bool
 		{
-			updateWeatherApiTemperature();
+			if (updateWeatherApiTemperature())
+			{
+				DebugLog("updateWeatherApiTemperature");
+				ESPUI.updateLabel(_lblWeatherTemp, String(_weatherApiTemperature) + " °C");
+			}
+
 			return true; // Keep timer running
 		});
+}
+
+/// @brief Setup for WiFiManager as blocking implementation if not configured.
+void setupWifiManager()
+{
+	// explicitly set mode, esp defaults to STA+AP
+	WiFi.mode(WIFI_STA);
+
+	// Start config portal only if there is no WiFi configuration
+	// And enable portal blocking for configuration
+	bool configurued = _wifiManager.getWiFiIsSaved();
+	_wifiManager.setEnableConfigPortal(!configurued);
+	_wifiManager.setConfigPortalBlocking(!configurued);
+	_wifiManager.setConfigPortalTimeout(86400); // 24h timeout
+
+	// automatically connect using saved credentials if they exist
+	// If connection fails it starts an access point with the specified name
+	bool connected = _wifiManager.autoConnect("", "123456789");
+	if (!connected)
+	{
+		if (!configurued)
+		{
+			DebugLog("setupWifiManager: Config portal failed, reboot");
+			ESP.restart();
+			delay(10000);
+		}
+		else
+		{
+			DebugLog("setupWifiManager: WiFi is configured, but connecting to saved WiFi failed");
+		}
+	}
+	else
+	{
+		if (!configurued)
+		{
+			DebugLog("setupWifiManager: Start reboot after WiFi configuration");
+			ESP.restart();
+			delay(10000);
+		}
+
+		DebugLog("setupWifiManager: Successfuly connected to WiFi");
+	}
 }
 
 /// @brief Setup reading of input thermistor
@@ -438,9 +469,20 @@ void setupThermistorInputReading()
 		TEMP_IN_SAMPLE_CYCLE,
 		[](void *opaque) -> bool
 		{
-			updateThermistorInTemperature();
+			if (updateThermistorInTemperature())
+			{
+				DebugLog("updateThermistorInTemperature");
+				ESPUI.updateLabel(_lblSensorTemp, String(_thermistorInTemperature) + " °C");
+			}
+
 			return true; // Keep timer running
 		});
+}
+
+/// @brief Setup of the power limiter via 0-10V analog output
+void setupPowerLimit()
+{
+	// TODO: implement 0-10V analog output
 }
 
 /// @brief Setup digital potentiometer for output temperature
@@ -456,7 +498,12 @@ void setupOutputTemperature()
 		TEMP_OUT_UPDATE_CYCLE,
 		[](void *opaque) -> bool
 		{
-			updateOutputTemperature();
+			if (updateOutputTemperature())
+			{
+				DebugLog("updateOutputTemperature");
+				ESPUI.updateLabel(_lblOutputTemp, String(_outputTemperature) + " °C");
+			}
+
 			return true;
 		});
 }
@@ -474,5 +521,7 @@ void setup()
 	setupThermistorInputReading();
 	setupWifiManager();
 	setupWeatherApi();
+	setupPowerLimit();
 	setupOutputTemperature();
+	setupWebUi();
 }

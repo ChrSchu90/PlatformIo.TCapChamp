@@ -19,3 +19,6 @@ static const double WEATHER_LATITUDE = 0;
 
 /// @brief City ID is sometimes very hard to find, instead you can use Latitude + Longitude (can be taken from google maps with right-click)
 static const double WEATHER_LONGITUDE = 0;
+
+/// @brief Initial password for WiFi configuration AP 
+static const String WIFI_CONFIG_PASSWORD = "123456789";

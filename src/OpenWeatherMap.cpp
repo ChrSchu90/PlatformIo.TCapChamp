@@ -11,12 +11,12 @@
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <WiFi.h>
-#include "OpenWeatherMapApi.h"
+#include "OpenWeatherMap.h"
 
 /// @brief Creates an instance of the OpenWeatherMap API
 /// @param apiKey Your API key
 /// @param cityId The city ID can be taken from https://openweathermap.org/ by search from URL (https://openweathermap.org/city/xxxxxxx)
-OpenWeatherMapApi::OpenWeatherMapApi(String apiKey, unsigned int cityId) : apiUrl("https://api.openweathermap.org/data/2.5/weather?id=" + String(cityId) + "&lang=en" + "&units=METRIC" + "&appid=" + apiKey)
+OpenWeatherMap::OpenWeatherMap(String apiKey, unsigned int cityId) : apiUrl("https://api.openweathermap.org/data/2.5/weather?id=" + String(cityId) + "&lang=en" + "&units=METRIC" + "&appid=" + apiKey)
 {
 }
 
@@ -24,13 +24,13 @@ OpenWeatherMapApi::OpenWeatherMapApi(String apiKey, unsigned int cityId) : apiUr
 /// @param apiKey Your API key
 /// @param latitude Location latitude (can be taken from google maps with right-click)
 /// @param longitude Location longitude (can be taken from google maps with right-click)
-OpenWeatherMapApi::OpenWeatherMapApi(String apiKey, double latitude, double longitude) : apiUrl("https://api.openweathermap.org/data/2.5/weather?lat=" + String(latitude, 6) + "&lon=" + String(longitude, 6) + "&lang=en" + "&units=METRIC" + "&appid=" + apiKey)
+OpenWeatherMap::OpenWeatherMap(String apiKey, double latitude, double longitude) : apiUrl("https://api.openweathermap.org/data/2.5/weather?lat=" + String(latitude, 6) + "&lon=" + String(longitude, 6) + "&lang=en" + "&units=METRIC" + "&appid=" + apiKey)
 {
 }
 
 /// @brief Sends a API request (may take a while and will block)
 /// @return the API response
-ApiResponse OpenWeatherMapApi::requestTemperature()
+ApiResponse OpenWeatherMap::requestTemperature()
 {
     if (WiFi.status() != WL_CONNECTED)
     {
