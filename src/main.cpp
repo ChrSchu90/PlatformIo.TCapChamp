@@ -302,16 +302,13 @@ void setupPreferences()
 
 	// Note: Key name is limited to 15 chars.
 	_manualMode = _preferences.getBool(PREF_KEY_MANUAL_MODE, false);
-	_temperatureOffset = _preferences.getInt(PREF_KEY_TEMP_OFFSET, 0);
+	_temperatureOffset = _preferences.getInt(PREF_KEY_TEMP_OFFSET, 0); // TODO: Move into area
 	_temperatureManual = _preferences.getInt(PREF_KEY_TEMP_MANUAL, 15);
 }
 
 /// @brief Setup for Web UI (called by setupWifiManager after auto connect)
 void setupWebUi()
 {
-	// See https://github.com/s00500/ESPUI
-	ESPUI.begin("Heat Pump Champ", nullptr, nullptr, 80);
-
 	// Create global labels
 	_lblSensorTemp = ESPUI.addControl(Label, "Sensor", String(_thermistorInTemperature) + " °C", None);
 	_lblWeatherTemp = ESPUI.addControl(Label, "Weather", String(_weatherApiTemperature) + " °C", None);
@@ -345,7 +342,7 @@ void setupWebUi()
 			if (_temperatureManual != value)
 			{
 				_temperatureManual = value;
-				//_preferences.putInt(PREF_KEY_TEMP_MANUAL, _temperatureManual); // TODO: Enable saving
+				_preferences.putInt(PREF_KEY_TEMP_MANUAL, _temperatureManual);
 				ESPUI.updateSlider(sender->id, value);
 			}
 		});
@@ -369,6 +366,9 @@ void setupWebUi()
 	ESPUI.addControl(Min, "", "-15", None, _sldOffset);
 	ESPUI.addControl(Max, "", "15", None, _sldOffset);
 	ESPUI.addControl(Step, "", "1", None, _sldOffset);
+
+	// Start ESP UI https://github.com/s00500/ESPUI
+	ESPUI.begin("Heat Pump Champ");
 }
 
 /// @brief Setup for Weather API
