@@ -41,6 +41,18 @@ Timer<5, millis> _timers;
 Preferences _preferences;
 WiFiManager _wifiManager;
 
+uint16_t _lblSensorTemp;
+uint16_t _lblWeatherTemp;
+uint16_t _lblOutputTemp;
+uint16_t _tabManual;
+uint16_t _tabTemperature;
+uint16_t _tabPower;
+uint16_t _tabDevice;
+uint16_t _tabWifi;
+uint16_t _swManualMode;
+uint16_t _sldManualTemp;
+uint16_t _sldOffset; // TODO: Remove after moving into area
+
 SPIClass *_spiDigitalPoti;
 String _weatherApiUrl;
 bool _manualMode;
@@ -294,20 +306,6 @@ void setupPreferences()
 	_temperatureManual = _preferences.getInt(PREF_KEY_TEMP_MANUAL, 15);
 }
 
-uint16_t _lblSensorTemp;
-uint16_t _lblWeatherTemp;
-uint16_t _lblOutputTemp;
-uint16_t _tabManual;
-uint16_t _tabTemperature;
-uint16_t _tabPower;
-uint16_t _tabDevice;
-uint16_t _tabWifi;
-
-uint16_t _swManualMode;
-uint16_t _sldManualTemp;
-
-uint16_t _sldOffset; // TODO: Remove after moving into area
-
 /// @brief Setup for Web UI (called by setupWifiManager after auto connect)
 void setupWebUi()
 {
@@ -408,7 +406,6 @@ void setupWeatherApi()
 		{
 			if (updateWeatherApiTemperature())
 			{
-				DebugLog("updateWeatherApiTemperature");
 				ESPUI.updateLabel(_lblWeatherTemp, String(_weatherApiTemperature) + " °C");
 			}
 
@@ -471,7 +468,6 @@ void setupThermistorInputReading()
 		{
 			if (updateThermistorInTemperature())
 			{
-				DebugLog("updateThermistorInTemperature");
 				ESPUI.updateLabel(_lblSensorTemp, String(_thermistorInTemperature) + " °C");
 			}
 
@@ -500,7 +496,6 @@ void setupOutputTemperature()
 		{
 			if (updateOutputTemperature())
 			{
-				DebugLog("updateOutputTemperature");
 				ESPUI.updateLabel(_lblOutputTemp, String(_outputTemperature) + " °C");
 			}
 
