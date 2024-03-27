@@ -9,10 +9,11 @@
 #include <RunningMedian.h>
 #include <SPI.h>
 #include <stdlib.h>
-#include "ThermistorCalc.h"
+#include "Weather\OpenWeatherMap.h"
+#include "Thermistor\ThermistorCalc.h"
+#include "Tabs\TabSystemInfo.h"
+#include "Tabs\TabWifiInfo.h"
 #include "Area.h"
-#include "TabSystemInfo.h"
-#include "TabWifiInfo.h"
 #include "Secrets.h"
 
 static const bool DEBUG_LOGGING = true;														// Enable/disable logs to Serial println
