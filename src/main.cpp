@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include "ThermistorCalc.h"
 #include "Area.h"
+#include "TabSystemInfo.h"
+#include "TabWifiInfo.h"
 #include "Secrets.h"
 
 static const bool DEBUG_LOGGING = true;														// Enable/disable logs to Serial println
@@ -44,14 +46,13 @@ WiFiManager _wifiManager;
 uint16_t _lblSensorTemp;
 uint16_t _lblWeatherTemp;
 uint16_t _lblOutputTemp;
-uint16_t _tabManual;
 uint16_t _tabTemperature;
 uint16_t _tabPower;
-uint16_t _tabDevice;
-uint16_t _tabWifi;
 uint16_t _swManualMode;
 uint16_t _sldManualTemp;
 uint16_t _sldOffset; // TODO: Remove after moving into area
+TabSystemInfo *_tabSystemInfo;
+TabWifiInfo *_tabWifiInfo;
 
 SPIClass *_spiDigitalPoti;
 String _weatherApiUrl;
@@ -277,16 +278,6 @@ bool updateThermistorInTemperature()
 	return false;
 }
 
-/// @brief Resets the configuration (WiFi and WebUI) and restarts the device
-void Reset()
-{
-	// TODO: Add into WebUI
-	_preferences.clear();
-	_wifiManager.resetSettings();
-
-	ESP.restart();
-}
-
 /// @brief Put your main code here, to run repeatedly:
 void loop()
 {
@@ -315,14 +306,13 @@ void setupWebUi()
 	_lblOutputTemp = ESPUI.addControl(Label, "Output", String(_outputTemperature) + " °C", None);
 
 	// Generate tabs
-	_tabManual = ESPUI.addControl(Tab, "Manual", "Manual");
 	_tabTemperature = ESPUI.addControl(Tab, "Temperature", "Temperature");
 	_tabPower = ESPUI.addControl(Tab, "Power", "Power");
-	_tabDevice = ESPUI.addControl(Tab, "Device", "Device");
-	_tabWifi = ESPUI.addControl(Tab, "WiFi", "WiFi");
+	_tabSystemInfo = new TabSystemInfo();
+	_tabWifiInfo = new TabWifiInfo(&_wifiManager);
 
 	_swManualMode = ESPUI.addControl(
-		Switcher, "Manual Temperature", String(_manualMode ? 1 : 0), None, _tabManual,
+		Switcher, "Manual Temperature", String(_manualMode ? 1 : 0), None, _tabTemperature,
 		[](Control *sender, int type)
 		{
 			bool value = sender->value.toInt() > 0;
@@ -366,7 +356,7 @@ void setupWebUi()
 	ESPUI.addControl(Min, "", "-15", None, _sldOffset);
 	ESPUI.addControl(Max, "", "15", None, _sldOffset);
 	ESPUI.addControl(Step, "", "1", None, _sldOffset);
-
+	
 	// Start ESP UI https://github.com/s00500/ESPUI
 	ESPUI.begin("Heat Pump Champ");
 }
