@@ -12,6 +12,9 @@
 
 #include <Arduino.h>
 #include <WiFiManager.h>
+#include <LittleFS.h>
+#include <ESPUI.h>
+#include <HTTPClient.h>
 
 /**
  * @brief Implements a WiFi information tab inside the Webinterface

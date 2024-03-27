@@ -10,8 +10,9 @@
 
 #include <Arduino.h>
 #include <WiFiManager.h>
-#include <WiFi.h>
+#include <LittleFS.h>
 #include <ESPUI.h>
+#include <HTTPClient.h>
 #include "TabWifiInfo.h"
 
 /// @brief Creates an instance of the WifiInfo

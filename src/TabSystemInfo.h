@@ -10,6 +10,13 @@
 
 #pragma once
 
+#include <Arduino.h>
+#include <Preferences.h>
+#include <WiFiManager.h>
+#include <LittleFS.h>
+#include <ESPUI.h>
+#include <HTTPClient.h>
+
 /**
  * @brief Implements a system information tab inside the Webinterface
  */
@@ -28,7 +35,6 @@ private:
     uint32_t _heapSize;
     uint32_t _sketchSize;
     int _rebootCnt = REBOOT_CLICK_CNT;
-
 
 protected:
 public:

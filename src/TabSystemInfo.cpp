@@ -9,8 +9,10 @@
  */
 
 #include <Arduino.h>
-#include <WifiManager.h>
+#include <WiFiManager.h>
+#include <LittleFS.h>
 #include <ESPUI.h>
+#include <HTTPClient.h>
 #include "TabSystemInfo.h"
 
 /// @brief Creates an instance of the SystemInfo
