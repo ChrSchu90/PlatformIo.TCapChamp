@@ -10,9 +10,6 @@
 
 #pragma once
 
-#include <WString.h>
-#include <math.h>
-
 /// @brief Represents the API response with temperature and error information if request failed
 struct ApiResponse
 {

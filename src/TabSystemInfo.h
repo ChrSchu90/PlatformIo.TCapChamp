@@ -10,13 +10,6 @@
 
 #pragma once
 
-#include <Arduino.h>
-#include <Preferences.h>
-#include <WiFiManager.h>
-#include <LittleFS.h>
-#include <ESPUI.h>
-#include <HTTPClient.h>
-
 /**
  * @brief Implements a system information tab inside the Webinterface
  */
