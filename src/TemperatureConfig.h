@@ -17,23 +17,16 @@ class TemperatureArea;
 class TemperatureConfig
 {
 private:
-    std::function<void(TemperatureConfig *config)> _changedCallbacks[5];
     TemperatureArea *_areas[TEMP_AREA_AMOUNT];
     Preferences *_preferences;
     bool _manualMode;
     int _manualTemperature;
-
-    /// @brief Invoke all chage callbacks
-    void invokeChangeCallbacks();
 
 protected:
 public:
     /// @brief Creates a new instance of an TemperatureConfig
     /// @param preferences the app preferences to stroe the configuration
     TemperatureConfig(Preferences *preferences);
-
-    /// @brief registers a method that will be called if the configuration has been changed
-    void registerChangeCallback(std::function<void(TemperatureConfig *config)> func);
 
     /// @brief Gets if the manual mode is active
     bool isManualMode() { return _manualMode; };
@@ -68,16 +61,12 @@ public:
 class TemperatureArea
 {
 private:
-    std::function<void(TemperatureArea *config)> _changedCallbacks[5];
     TemperatureConfig *_config;
     Preferences *_preferences;
     bool _enabled;
     int _start;
     int _end;
     int _offset;
-
-    /// @brief Invoke all chage callbacks
-    void invokeChangeCallbacks();
 
 protected:
 public:
@@ -89,9 +78,6 @@ public:
     /// @param config the parent configuration
     /// @param preferences the app preferences to stroe the configuration
     TemperatureArea(size_t index, TemperatureConfig *config, Preferences *preferences);
-
-    /// @brief registers a method that will be called if the area configuration has been changed
-    void registerChangeCallback(std::function<void(TemperatureArea *config)> func);
 
     /// @brief Gets if the area is responsable for the given temperature
     /// @param temperature the temperature

@@ -30,7 +30,6 @@ void TemperatureArea::setEnabled(bool enabled)
 
     _enabled = enabled;
     _preferences->putBool(String(KEY_SETING_TEMP_AREA_ENABLED + index).c_str(), _enabled);
-    invokeChangeCallbacks();
 }
 
 /// @brief Sets the start temperature of the area
@@ -44,7 +43,6 @@ void TemperatureArea::setStart(int start)
 
     _start = start;
     _preferences->putInt(String(KEY_SETING_TEMP_AREA_START + index).c_str(), _start);
-    invokeChangeCallbacks();
 }
 
 /// @brief Sets the start temperature of the area
@@ -58,7 +56,6 @@ void TemperatureArea::setEnd(int end)
 
     _end = end;
     _preferences->putInt(String(KEY_SETING_TEMP_AREA_END + index).c_str(), _end);
-    invokeChangeCallbacks();
 }
 
 /// @brief Sets the temperature offset of the area
@@ -72,7 +69,6 @@ void TemperatureArea::setOffset(int offset)
 
     _offset = offset;
     _preferences->putInt(String(KEY_SETING_TEMP_AREA_OFFSET + index).c_str(), _offset);
-    invokeChangeCallbacks();
 }
 
 /// @brief Gets if the area is responsable for the given temperature
@@ -87,32 +83,6 @@ bool TemperatureArea::isResponsable(float temperature)
 bool TemperatureArea::isValid()
 {
     return _start <= _end && _end >= _start;
-}
-
-/// @brief registers a method that will be called if the area configuration has been changed
-void TemperatureArea::registerChangeCallback(std::function<void(TemperatureArea *config)> func)
-{
-    for (size_t i = 0; i < sizeof(_changedCallbacks)/sizeof(_changedCallbacks[0]); i++)
-    {
-        if (!_changedCallbacks[i])
-        {
-            _changedCallbacks[i] = func;
-            return;
-        }
-    }
-}
-
-/// @brief Invoke all chage callbacks
-void TemperatureArea::invokeChangeCallbacks()
-{
-    for (size_t i = 0; i < sizeof(_changedCallbacks)/sizeof(_changedCallbacks[0]); i++)
-    {
-        auto callback = _changedCallbacks[i];
-        if (callback)
-        {
-            callback(this);
-        }
-    }
 }
 
 
@@ -134,7 +104,6 @@ TemperatureConfig::TemperatureConfig(Preferences *preferences) : _preferences(pr
     for (size_t i = 0; i < TEMP_AREA_AMOUNT; i++)
     {
         _areas[i] = new TemperatureArea(i, this, preferences);
-        _areas[i]->registerChangeCallback([&](TemperatureArea *config){ invokeChangeCallbacks(); });
     }
 };
 
@@ -149,7 +118,6 @@ void TemperatureConfig::setManualMode(bool manualMode)
 
     _manualMode = manualMode;
     _preferences->putBool(KEY_SETING_MANUAL_MODE, _manualMode);
-    invokeChangeCallbacks();
 }
 
 /// @brief Sets if the manual temperature
@@ -163,7 +131,6 @@ void TemperatureConfig::setManualTemperature(int manualTemperature)
 
     _manualTemperature = manualTemperature;
     _preferences->putInt(KEY_SETING_MANUAL_TEMP, _manualTemperature);
-    invokeChangeCallbacks();
 }
 
 /// @brief Get the output temperature based on the input and configuration
@@ -210,30 +177,4 @@ TemperatureArea *TemperatureConfig::getArea(float temperature)
     }
 
     return nullptr;
-}
-
-/// @brief registers a method that will be called if the area configuration has been changed
-void TemperatureConfig::registerChangeCallback(std::function<void(TemperatureConfig *config)> func)
-{
-    for (size_t i = 0; i < sizeof(_changedCallbacks)/sizeof(_changedCallbacks[0]); i++)
-    {
-        if (!_changedCallbacks[i])
-        {
-            _changedCallbacks[i] = func;
-            return;
-        }
-    }
-}
-
-/// @brief Invoke all chage callbacks
-void TemperatureConfig::invokeChangeCallbacks()
-{
-    for (size_t i = 0; i < sizeof(_changedCallbacks)/sizeof(_changedCallbacks[0]); i++)
-    {
-        auto callback = _changedCallbacks[i];
-        if (callback)
-        {
-            callback(this);
-        }
-    }
 }

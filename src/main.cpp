@@ -24,13 +24,12 @@ static const char *KEY_SETTING_NAMESPACE = "HeatPumpChamp";									// Preferenc
 static const char *PREF_KEY_TEMP_OFFSET = "TempOffet";										// Preferences key for temperature offset (limited to 15 chars)
 static const uint8_t GPIO_THERMISTOR_IN = 36;												// GPIO used for real input temperature from thermistor
 static const uint8_t GPIO_FAILOVER_OUT = 27;												// GPIO used as digital output to signal that the output is now valid (failover via relays or LED)
-static const unsigned int WEB_UI_UPDATE_CYCLE = 10000;										// Update time for Web UI in milliseconds
 static const float SUPPLY_VOLTAGE = 3.3;													// Maximum Voltage ADC input
 static const unsigned int WEATHER_API_UPDATE_CYCLE = 600000;								// Update time of the temperture by the weather API in milliseconds
-static const unsigned int TEMP_OUT_UPDATE_CYCLE = 10000;									// Update time of the output temperature in milliseconds
+static const unsigned int TEMP_OUT_UPDATE_CYCLE = 1000;										// Update time of the output temperature in milliseconds
 static const unsigned int TEMP_IN_DEVIDER_RESISTANCE = 10000;								// Voltage divider resistor value for input temperature in Ohm
-static const unsigned int TEMP_IN_SAMPLE_CYCLE = 100;										// Sample rate to build the median in milliseconds
-static const unsigned int TEMP_IN_UPDATE_CYCLE = 10000;										// Update every n ms the input temperature
+static const unsigned int TEMP_IN_SAMPLE_CYCLE = 10;										// Sample rate to build the median in milliseconds
+static const unsigned int TEMP_IN_UPDATE_CYCLE = 1000;										// Update every n ms the input temperature
 static const unsigned int TEMP_IN_SAMPLE_CNT = TEMP_IN_UPDATE_CYCLE / TEMP_IN_SAMPLE_CYCLE; // Amount of samples for input thermistor median calculation
 static const uint16_t DIGI_POTI_STEPS = 256;												// Maximum amount of steps that the digital potentiometer supports
 static const uint16_t DIGI_POTI_STEP_MIN = 0;												// Minimum step of the digital potentiometer to limit maximum current (if no pre-resistor is used)
@@ -44,9 +43,9 @@ Timer<5, millis> _timers;
 Preferences _preferences;
 WiFiManager _wifiManager;
 
-uint16_t _lblSensorTemp; // TODO: remove UI stuff from main and move it into Tab
+uint16_t _lblSensorTemp;  // TODO: remove UI stuff from main and move it into Tab
 uint16_t _lblWeatherTemp; // TODO: remove UI stuff from main and move it into Tab
-uint16_t _lblOutputTemp; // TODO: remove UI stuff from main and move it into Tab
+uint16_t _lblOutputTemp;  // TODO: remove UI stuff from main and move it into Tab
 TemperatureConfig *_configTemperature;
 TemperatureTab *_tabTemperature;
 SystemInfoTab *_tabSystemInfo;
@@ -199,7 +198,6 @@ bool updateOutputTemperature()
 		float outputTemperature = _thermistorOut.celsiusFromResistance(outputResistance);
 		if (_outputTemperature != outputTemperature)
 		{
-
 			DebugLog("updateOutputTemperature: targetTemp=" + String(targetTemp) + " targetResistance=" + String(targetResistance) + " posistion=" + String(posistion) + " positionResistance=" + String(positionResistance) + " outputResistance=" + String(outputResistance) + " outputTemperature=" + String(outputTemperature));
 			_spiDigitalPoti->transfer16(posistion);
 			_outputTemperature = outputTemperature;
@@ -262,17 +260,6 @@ void setupConfiguration()
 	// Note: Namespace name is limited to 15 chars.
 	_preferences.begin(KEY_SETTING_NAMESPACE, false);
 	_configTemperature = new TemperatureConfig(&_preferences);
-	_configTemperature->registerChangeCallback(
-		[](TemperatureConfig *config)
-		{
-			if (updateOutputTemperature())
-			{
-				// TODO: remove UI stuff from main and move it into Tab
-				ESPUI.updateLabel(_lblOutputTemp, String(_outputTemperature) + " °C");
-			}
-
-			DebugLog("Config has changed!");
-		});
 }
 
 /// @brief Setup for Web UI (called by setupWifiManager after auto connect)
