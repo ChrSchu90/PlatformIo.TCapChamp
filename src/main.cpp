@@ -9,19 +9,19 @@
 #include <RunningMedian.h>
 #include <SPI.h>
 #include <stdlib.h>
+#include <nvs_flash.h>
 #include "OpenWeatherMap.h"
 #include "ThermistorCalc.h"
-#include "TabSystemInfo.h"
-#include "TabWifiInfo.h"
-#include "Area.h"
+#include "TemperatureConfig.h"
+#include "TemperatureTab.h"
+#include "SystemInfoTab.h"
+#include "WifiInfoTab.h"
 #include "Secrets.h"
 
 static const bool DEBUG_LOGGING = true;														// Enable/disable logs to Serial println
 static const uint8_t SPI_BUS_THERMISTOR_OUT = VSPI;											// SPI bus used for digital potentiometer for output temperature
-static const char *PREF_KEY_NAMESPACE = "HeatPumpChamp";									// Preferences namespance key (limited to 15 chars)
-static const char *PREF_KEY_MANUAL_MODE = "ManualMode";										// Preferences key for manual mode (limited to 15 chars)
+static const char *KEY_SETTING_NAMESPACE = "HeatPumpChamp";									// Preferences namespance key (limited to 15 chars)
 static const char *PREF_KEY_TEMP_OFFSET = "TempOffet";										// Preferences key for temperature offset (limited to 15 chars)
-static const char *PREF_KEY_TEMP_MANUAL = "TempManual";										// Preferences key for manual temperature (limited to 15 chars)
 static const uint8_t GPIO_THERMISTOR_IN = 36;												// GPIO used for real input temperature from thermistor
 static const uint8_t GPIO_FAILOVER_OUT = 27;												// GPIO used as digital output to signal that the output is now valid (failover via relays or LED)
 static const unsigned int WEB_UI_UPDATE_CYCLE = 10000;										// Update time for Web UI in milliseconds
@@ -37,29 +37,23 @@ static const uint16_t DIGI_POTI_STEP_MIN = 0;												// Minimum step of the 
 static const float DIGI_POTI_RESISTANCE = 50000.0f;											// Maximum resistance of the digital potentiometer in Ohm
 static const float DIGI_POTI_PRERESISTANCE = 3333.0f;										// Digital potentiometer pre-resistor to limit current and improve precision in Ohm
 
-RunningMedian _thermistorInMedian = RunningMedian(TEMP_IN_SAMPLE_CNT);
+RunningMedian _thermistorInMedian(TEMP_IN_SAMPLE_CNT);
 ThermistorCalc _thermistorIn(-40, 167820, 25, 6523, 120, 302);	// Input for real temperature (Panasonic PAW-A2W-TSOD)
 ThermistorCalc _thermistorOut(-40, 167820, 25, 6523, 120, 302); // Output that simulates a Panasonic PAW-A2W-TSOD for the Panasonic T-Cap 16 KW Kit-WQC16H9E8
 Timer<5, millis> _timers;
 Preferences _preferences;
 WiFiManager _wifiManager;
 
-uint16_t _lblSensorTemp;
-uint16_t _lblWeatherTemp;
-uint16_t _lblOutputTemp;
-uint16_t _tabTemperature;
-uint16_t _tabPower;
-uint16_t _swManualMode;
-uint16_t _sldManualTemp;
-uint16_t _sldOffset; // TODO: Remove after moving into area
-TabSystemInfo *_tabSystemInfo;
-TabWifiInfo *_tabWifiInfo;
+uint16_t _lblSensorTemp; // TODO: remove UI stuff from main and move it into Tab
+uint16_t _lblWeatherTemp; // TODO: remove UI stuff from main and move it into Tab
+uint16_t _lblOutputTemp; // TODO: remove UI stuff from main and move it into Tab
+TemperatureConfig *_configTemperature;
+TemperatureTab *_tabTemperature;
+SystemInfoTab *_tabSystemInfo;
+WifiInfoTab *_tabWifiInfo;
 
 SPIClass *_spiDigitalPoti;
 String _weatherApiUrl;
-bool _manualMode;
-int _temperatureOffset;
-int _temperatureManual;
 float _thermistorInTemperature = NAN;
 float _weatherApiTemperature = NAN;
 float _outputTemperature = NAN;
@@ -191,32 +185,8 @@ bool updateWeatherApiTemperature()
 /// @return If the value has changed
 bool updateOutputTemperature()
 {
-	float targetTemp = NAN;
-	if (_manualMode)
-	{
-		targetTemp = _temperatureManual;
-	}
-	else
-	{
-		float inTemp = _thermistorInTemperature;
-		if (!isnanf(inTemp))
-		{
-			targetTemp = inTemp + _temperatureOffset;
-		}
-		else
-		{
-			float apiTemp = _weatherApiTemperature;
-			if (!isnanf(apiTemp))
-			{
-				targetTemp = apiTemp + _temperatureOffset;
-			}
-			else
-			{
-				// TODO: Try getting anouther fallback like the last known temperature saved in preferences?
-				targetTemp = _temperatureManual;
-			}
-		}
-	}
+	float inputTemperature = !isnanf(_thermistorInTemperature) ? _thermistorInTemperature : _weatherApiTemperature;
+	float targetTemp = _configTemperature->getOutputTemperature(inputTemperature);
 
 	bool changed = false;
 	if (!isnanf(targetTemp))
@@ -286,16 +256,23 @@ void loop()
 	_wifiManager.process();
 }
 
-/// @brief Configure Preferences for storing data
-void setupPreferences()
+/// @brief Setup for the configuration for loading and storing none volatile data
+void setupConfiguration()
 {
 	// Note: Namespace name is limited to 15 chars.
-	_preferences.begin(PREF_KEY_NAMESPACE, false);
+	_preferences.begin(KEY_SETTING_NAMESPACE, false);
+	_configTemperature = new TemperatureConfig(&_preferences);
+	_configTemperature->registerChangeCallback(
+		[](TemperatureConfig *config)
+		{
+			if (updateOutputTemperature())
+			{
+				// TODO: remove UI stuff from main and move it into Tab
+				ESPUI.updateLabel(_lblOutputTemp, String(_outputTemperature) + " °C");
+			}
 
-	// Note: Key name is limited to 15 chars.
-	_manualMode = _preferences.getBool(PREF_KEY_MANUAL_MODE, false);
-	_temperatureOffset = _preferences.getInt(PREF_KEY_TEMP_OFFSET, 0); // TODO: Move into area
-	_temperatureManual = _preferences.getInt(PREF_KEY_TEMP_MANUAL, 15);
+			DebugLog("Config has changed!");
+		});
 }
 
 /// @brief Setup for Web UI (called by setupWifiManager after auto connect)
@@ -307,57 +284,28 @@ void setupWebUi()
 	_lblOutputTemp = ESPUI.addControl(Label, "Output", String(_outputTemperature) + " °C", None);
 
 	// Generate tabs
-	_tabTemperature = ESPUI.addControl(Tab, "Temperature", "Temperature");
-	_tabPower = ESPUI.addControl(Tab, "Power", "Power");
-	_tabSystemInfo = new TabSystemInfo();
-	_tabWifiInfo = new TabWifiInfo(&_wifiManager);
-
-	_swManualMode = ESPUI.addControl(
-		Switcher, "Manual Temperature", String(_manualMode ? 1 : 0), None, _tabTemperature,
-		[](Control *sender, int type)
-		{
-			bool value = sender->value.toInt() > 0;
-			if (_manualMode != value)
-			{
-				_manualMode = value;
-				_preferences.putBool(PREF_KEY_MANUAL_MODE, _manualMode);
-				ESPUI.updateSlider(sender->id, value);
-			}
-		});
-
-	_sldManualTemp = ESPUI.addControl(
-		Slider, "Temperature", String(_temperatureManual), None, _swManualMode,
-		[](Control *sender, int type)
-		{
-			int value = sender->value.toInt();
-			if (_temperatureManual != value)
-			{
-				_temperatureManual = value;
-				_preferences.putInt(PREF_KEY_TEMP_MANUAL, _temperatureManual);
-				ESPUI.updateSlider(sender->id, value);
-			}
-		});
-	ESPUI.addControl(Min, "", "-25", None, _sldManualTemp);
-	ESPUI.addControl(Max, "", "25", None, _sldManualTemp);
-	ESPUI.addControl(Step, "", "1", None, _sldManualTemp);
+	//_tabPower = ESPUI.addControl(Tab, "Power", "Power");
+	_tabTemperature = new TemperatureTab(_configTemperature);
+	_tabSystemInfo = new SystemInfoTab();
+	_tabWifiInfo = new WifiInfoTab(&_wifiManager);
 
 	// TODO: Offset should be moved into the area
-	_sldOffset = ESPUI.addControl(
-		Slider, "Offset", String(_temperatureOffset), None, _tabTemperature,
-		[](Control *sender, int type)
-		{
-			int value = sender->value.toInt();
-			if (_temperatureOffset != value)
-			{
-				_temperatureOffset = value;
-				_preferences.putInt(PREF_KEY_TEMP_OFFSET, _temperatureOffset);
-				ESPUI.updateSlider(sender->id, value);
-			}
-		});
-	ESPUI.addControl(Min, "", "-15", None, _sldOffset);
-	ESPUI.addControl(Max, "", "15", None, _sldOffset);
-	ESPUI.addControl(Step, "", "1", None, _sldOffset);
-	
+	//_sldOffset = ESPUI.addControl(
+	//	Slider, "Offset", String(_temperatureOffset), None, _tabTemperature,
+	//	[](Control *sender, int type)
+	//	{
+	//		int value = sender->value.toInt();
+	//		if (_temperatureOffset != value)
+	//		{
+	//			_temperatureOffset = value;
+	//			_preferences.putInt(PREF_KEY_TEMP_OFFSET, _temperatureOffset);
+	//			ESPUI.updateSlider(sender->id, value);
+	//		}
+	//	});
+	// ESPUI.addControl(Min, "", "-15", None, _sldOffset);
+	// ESPUI.addControl(Max, "", "15", None, _sldOffset);
+	// ESPUI.addControl(Step, "", "1", None, _sldOffset);
+
 	// Start ESP UI https://github.com/s00500/ESPUI
 	ESPUI.begin("Heat Pump Champ");
 }
@@ -376,7 +324,7 @@ void setupWeatherApi()
 		DebugLog("setupWeatherApi: Using City ID");
 		_weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=" + String(WEATHER_CITY_ID) + "&lang=en" + "&units=METRIC" + "&appid=" + WEATHER_API_KEY;
 	}
-	else if (WEATHER_LATITUDE != 0 && WEATHER_LONGITUDE != 0)
+	else if (abs(WEATHER_LATITUDE) > 0 && abs(WEATHER_LONGITUDE) > 0)
 	{
 		DebugLog("setupWeatherApi: Using Latitude and Longitude");
 		_weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?lat=" + String(WEATHER_LATITUDE, 6) + "&lon=" + String(WEATHER_LONGITUDE, 6) + "&lang=en" + "&units=METRIC" + "&appid=" + WEATHER_API_KEY;
@@ -397,6 +345,7 @@ void setupWeatherApi()
 		{
 			if (updateWeatherApiTemperature())
 			{
+				// TODO: remove UI stuff from main and move it into Tab
 				ESPUI.updateLabel(_lblWeatherTemp, String(_weatherApiTemperature) + " °C");
 			}
 
@@ -419,7 +368,7 @@ void setupWifiManager()
 
 	// automatically connect using saved credentials if they exist
 	// If connection fails it starts an access point with the specified name
-	bool connected = _wifiManager.autoConnect("", "123456789");
+	bool connected = _wifiManager.autoConnect("", WIFI_CONFIG_PASSWORD.c_str());
 	if (!connected)
 	{
 		if (!configurued)
@@ -451,14 +400,13 @@ void setupThermistorInputReading()
 {
 	// initial reading without building a median
 	_thermistorInTemperature = getCurrentThermistorInTemperature(true);
-	DebugLog("setupThermistorInputReading: initial _thermistorInTemperature=" + String(_thermistorInTemperature));
-
 	_timers.every(
 		TEMP_IN_SAMPLE_CYCLE,
 		[](void *opaque) -> bool
 		{
 			if (updateThermistorInTemperature())
 			{
+				// TODO: remove UI stuff from main and move it into Tab
 				ESPUI.updateLabel(_lblSensorTemp, String(_thermistorInTemperature) + " °C");
 			}
 
@@ -487,6 +435,7 @@ void setupOutputTemperature()
 		{
 			if (updateOutputTemperature())
 			{
+				// TODO: remove UI stuff from main and move it into Tab
 				ESPUI.updateLabel(_lblOutputTemp, String(_outputTemperature) + " °C");
 			}
 
@@ -503,7 +452,7 @@ void setup()
 		delay(2000); // Delay for serial monitor attach
 	}
 
-	setupPreferences();
+	setupConfiguration();
 	setupThermistorInputReading();
 	setupWifiManager();
 	setupWeatherApi();

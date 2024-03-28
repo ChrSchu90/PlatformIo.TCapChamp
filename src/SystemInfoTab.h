@@ -1,19 +1,9 @@
-/**
- * @file TabSystemInfo.h
- * @author ChrSchu
- * @brief Implements a system information tab inside the Webinterface
- * @date 2024-03-24
- *
- * @copyright Copyright (c) 2024
- *
- */
-
 #pragma once
 
 /**
  * @brief Implements a system information tab inside the Webinterface
  */
-class TabSystemInfo
+class SystemInfoTab
 {
 private:
     static const int REBOOT_CLICK_CNT = 5;
@@ -32,8 +22,8 @@ private:
 protected:
 public:
 
-    /// @brief Creates an instance of the TabSystemInfo
-    TabSystemInfo();
+    /// @brief Creates an instance of the SystemInfoTab
+    SystemInfoTab();
 
     /// @brief Update the system information
     void update();

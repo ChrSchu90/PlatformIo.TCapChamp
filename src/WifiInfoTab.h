@@ -1,13 +1,3 @@
-/**
- * @file TabWifiInfo.h
- * @author ChrSchu
- * @brief Implements a WiFi information tab inside the Webinterface
- * @date 2024-03-24
- *
- * @copyright Copyright (c) 2024
- *
- */
-
 #pragma once
 
 #include <WiFiManager.h>
@@ -15,7 +5,7 @@
 /**
  * @brief Implements a WiFi information tab inside the Webinterface
  */
-class TabWifiInfo
+class WifiInfoTab
 {
 private:
     static const int RESET_CLICK_CNT = 5;
@@ -36,7 +26,7 @@ protected:
 public:
 
     /// @brief Creates an instance of the TabWifiInfo
-    TabWifiInfo(WiFiManager *wifiManager);
+    WifiInfoTab(WiFiManager *wifiManager);
 
     /// @brief Update the WiFi information
     void update();

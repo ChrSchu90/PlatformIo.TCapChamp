@@ -1,13 +1,3 @@
-/**
- * @file OpenWeatherMapApi.h
- * @author ChrSchu
- * @brief Implements the OpenWeatherMap API https://openweathermap.org/current
- * @date 2024-03-24
- *
- * @copyright Copyright (c) 2024
- *
- */
-
 #pragma once
 
 /// @brief Represents the API response with temperature and error information if request failed

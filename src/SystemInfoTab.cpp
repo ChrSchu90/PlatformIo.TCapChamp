@@ -1,27 +1,17 @@
-/**
- * @file SystemInfo.cpp
- * @author ChrSchu
- * @brief Implements a system information tab inside the Webinterface
- * @date 2024-03-24
- *
- * @copyright Copyright (c) 2024
- *
- */
-
 #include <Arduino.h>
 #include <WiFiManager.h>
 #include <ESPUI.h>
-#include "TabSystemInfo.h"
+#include "SystemInfoTab.h"
 
-/// @brief Creates an instance of the SystemInfo
-TabSystemInfo::TabSystemInfo()
+/// @brief Creates an instance of the SystemInfoTab
+SystemInfoTab::SystemInfoTab()
 {
     _tab = ESPUI.addControl(
         Tab, "System", "System", None, None,
         [](Control *sender, int type, void *UserInfo)
         {
             // Update on open tab
-            TabSystemInfo *instance = static_cast<TabSystemInfo *>(UserInfo);
+            SystemInfoTab *instance = static_cast<SystemInfoTab *>(UserInfo);
             instance->update();
             instance->_rebootCnt = REBOOT_CLICK_CNT;
             ESPUI.updateButton(instance->_btnReboot, "Press " + String(instance->_rebootCnt) + " times");
@@ -57,7 +47,7 @@ TabSystemInfo::TabSystemInfo()
                 return;
             }
 
-            TabSystemInfo *instance = static_cast<TabSystemInfo *>(UserInfo);
+            SystemInfoTab *instance = static_cast<SystemInfoTab *>(UserInfo);
             instance->_rebootCnt--;
             if (instance->_rebootCnt < 1)
             {
@@ -72,7 +62,7 @@ TabSystemInfo::TabSystemInfo()
 }
 
 /// @brief Update the system information
-void TabSystemInfo::update()
+void SystemInfoTab::update()
 {
     auto currentMillis = esp_timer_get_time() / 1000;
     auto seconds = currentMillis / 1000;

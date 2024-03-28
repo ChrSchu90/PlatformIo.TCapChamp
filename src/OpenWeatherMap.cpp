@@ -1,13 +1,3 @@
-/**
- * @file OpenWeatherMapApi.cpp
- * @author ChrSchu
- * @brief Implements the OpenWeatherMap API https://openweathermap.org/current
- * @date 2024-03-24
- *
- * @copyright Copyright (c) 2024
- *
- */
-
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <WiFi.h>

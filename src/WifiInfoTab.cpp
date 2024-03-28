@@ -1,27 +1,16 @@
-/**
- * @file WifiInfo.cpp
- * @author ChrSchu
- * @brief Implements a WiFi information tab inside the Webinterface
- * @date 2024-03-24
- *
- * @copyright Copyright (c) 2024
- *
- */
-
-#include <Arduino.h>
 #include <WiFiManager.h>
 #include <ESPUI.h>
-#include "TabWifiInfo.h"
+#include "WifiInfoTab.h"
 
 /// @brief Creates an instance of the WifiInfo
-TabWifiInfo::TabWifiInfo(WiFiManager *wifiManager) : _wifiManager(wifiManager)
+WifiInfoTab::WifiInfoTab(WiFiManager *wifiManager) : _wifiManager(wifiManager)
 {
     _tab = ESPUI.addControl(
         Tab, "WiFi", "WiFi", None, None,
         [](Control *sender, int type, void *UserInfo)
         {
             // Update on open tab
-            TabWifiInfo *instance = static_cast<TabWifiInfo *>(UserInfo);
+            WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
             instance->update();
             instance->_resetCnt = RESET_CLICK_CNT;
             ESPUI.updateButton(instance->_btnReset, "Press " + String(instance->_resetCnt) + " times");
@@ -46,7 +35,7 @@ TabWifiInfo::TabWifiInfo(WiFiManager *wifiManager) : _wifiManager(wifiManager)
                 return;
             }
 
-            TabWifiInfo *instance = static_cast<TabWifiInfo *>(UserInfo);
+            WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
             instance->_resetCnt--;
             if (instance->_resetCnt < 1)
             {
@@ -62,7 +51,7 @@ TabWifiInfo::TabWifiInfo(WiFiManager *wifiManager) : _wifiManager(wifiManager)
 }
 
 /// @brief Update the WiFi information
-void TabWifiInfo::update()
+void WifiInfoTab::update()
 {
     ESPUI.updateLabel(_lblMac, "MAC: " + String(WiFi.macAddress()));
     ESPUI.updateLabel(_lblIp, "IP: " + String(WiFi.localIP().toString()));
@@ -72,5 +61,5 @@ void TabWifiInfo::update()
     ESPUI.updateLabel(_lblSsid, "SSID: " + String(WiFi.SSID()));
 
     auto rssi = WiFi.RSSI();
-    ESPUI.updateLabel(_lblRssi, "RSSI: " + String(rssi) + " (" + String(min(max(2 * (rssi + 100), 0), 100)) + "%)");
+    ESPUI.updateLabel(_lblRssi, "RSSI: " + String(rssi) + " db (" + String(min(max(2 * (rssi + 100), 0), 100)) + " %)");
 }
