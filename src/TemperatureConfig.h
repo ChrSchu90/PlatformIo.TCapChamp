@@ -2,7 +2,7 @@
 
 #include <Preferences.h>
 
-static const size_t TEMP_AREA_AMOUNT = 4;
+static const size_t TEMP_AREA_AMOUNT = 6;
 static const char *KEY_SETING_MANUAL_MODE = "ManualMode";        // Preferences key for manual mode (limited to 15 chars)
 static const char *KEY_SETING_MANUAL_TEMP = "ManualTemp";        // Preferences key for manual temperature (limited to 15 chars)
 static const char *KEY_SETING_TEMP_AREA_ENABLED = "TempEnabled"; // Preferences key area enabled/disabled NOTE: WITHOUT INDEX

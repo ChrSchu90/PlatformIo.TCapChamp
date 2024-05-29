@@ -10,6 +10,8 @@
 #include <SPI.h>
 #include <stdlib.h>
 #include <nvs_flash.h>
+#include <Wire.h>
+#include <DFRobot_GP8403.h>
 #include "OpenWeatherMap.h"
 #include "ThermistorCalc.h"
 #include "TemperatureConfig.h"
@@ -20,7 +22,7 @@
 
 static const bool DEBUG_LOGGING = true;														// Enable/disable logs to Serial println
 static const uint8_t SPI_BUS_THERMISTOR_OUT = VSPI;											// SPI bus used for digital potentiometer for output temperature
-static const char *KEY_SETTING_NAMESPACE = "HeatPumpChamp";									// Preferences namespance key (limited to 15 chars)
+static const char *KEY_SETTING_NAMESPACE = "TCapChamp";										// Preferences namespance key (limited to 15 chars)
 static const char *PREF_KEY_TEMP_OFFSET = "TempOffet";										// Preferences key for temperature offset (limited to 15 chars)
 static const uint8_t GPIO_THERMISTOR_IN = 36;												// GPIO used for real input temperature from thermistor
 static const uint8_t GPIO_FAILOVER_OUT = 27;												// GPIO used as digital output to signal that the output is now valid (failover via relays or LED)
@@ -34,7 +36,7 @@ static const unsigned int TEMP_IN_SAMPLE_CNT = TEMP_IN_UPDATE_CYCLE / TEMP_IN_SA
 static const uint16_t DIGI_POTI_STEPS = 256;												// Maximum amount of steps that the digital potentiometer supports
 static const uint16_t DIGI_POTI_STEP_MIN = 0;												// Minimum step of the digital potentiometer to limit maximum current (if no pre-resistor is used)
 static const float DIGI_POTI_RESISTANCE = 50000.0f;											// Maximum resistance of the digital potentiometer in Ohm
-static const float DIGI_POTI_PRERESISTANCE = 3333.0f;										// Digital potentiometer pre-resistor to limit current and improve precision in Ohm
+static const float DIGI_POTI_PRERESISTANCE = 5000.0f;										// Digital potentiometer pre-resistor to limit current and improve precision in Ohm
 
 RunningMedian _thermistorInMedian(TEMP_IN_SAMPLE_CNT);
 ThermistorCalc _thermistorIn(-40, 167820, 25, 6523, 120, 302);	// Input for real temperature (Panasonic PAW-A2W-TSOD)
@@ -52,6 +54,8 @@ SystemInfoTab *_tabSystemInfo;
 WifiInfoTab *_tabWifiInfo;
 
 SPIClass *_spiDigitalPoti;
+DFRobot_GP8403 *_i2cDac;
+
 String _weatherApiUrl;
 float _thermistorInTemperature = NAN;
 float _weatherApiTemperature = NAN;
@@ -236,7 +240,7 @@ bool updateThermistorInTemperature()
 	{
 		float medianTemp = _thermistorInMedian.getMedianAverage(TEMP_IN_SAMPLE_CNT);
 		_thermistorInMedian.clear();
-		if (isnanf(_thermistorInTemperature) || abs(medianTemp - _thermistorInTemperature) > 0.01)
+		if (isnanf(_thermistorInTemperature) || abs(medianTemp - _thermistorInTemperature) > 0.06)
 		{
 			DebugLog("updateThermistorInTemperature: (median) Temperature=" + String(medianTemp));
 			_thermistorInTemperature = medianTemp;
@@ -404,7 +408,20 @@ void setupThermistorInputReading()
 /// @brief Setup of the power limiter via 0-10V analog output
 void setupPowerLimit()
 {
-	// TODO: implement 0-10V analog output
+	DFRobot_GP8403 *dac = new DFRobot_GP8403(&Wire, 0x5F);
+	if (dac->begin() != 0)
+	{
+		DebugLog("setupPowerLimit: Error on init 0-10V output via I2C!");
+	}
+	else
+	{
+		_i2cDac = dac;
+		DebugLog("setupPowerLimit: Successful init 0-10V output via I2C");
+		_i2cDac->setDACOutRange(dac->eOutputRange10V);
+		_i2cDac->setDACOutVoltage(0000, 0); // mV / Channel
+		//delay(1000); // wait before store, due to exceptions
+		//dac.store();
+	}
 }
 
 /// @brief Setup digital potentiometer for output temperature
