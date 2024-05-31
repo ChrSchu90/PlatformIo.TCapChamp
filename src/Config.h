@@ -3,6 +3,7 @@
 #include <Preferences.h>
 
 static const size_t TEMP_AREA_AMOUNT = 6;
+static const char *KEY_SETTING_NAMESPACE = "TCapChamp";			 // Preferences namespance key (limited to 15 chars)
 static const char *KEY_SETING_MANUAL_MODE = "ManualMode";        // Preferences key for manual mode (limited to 15 chars)
 static const char *KEY_SETING_MANUAL_TEMP = "ManualTemp";        // Preferences key for manual temperature (limited to 15 chars)
 static const char *KEY_SETING_TEMP_AREA_ENABLED = "TempEnabled"; // Preferences key area enabled/disabled NOTE: WITHOUT INDEX
@@ -114,4 +115,17 @@ public:
     /// @brief Sets the temperature offset of the area
     /// @param end defines the temperature offset of the area
     void setOffset(int offset);
+};
+
+/// @brief Holds the remanent settings
+class Config
+{
+private:
+    Preferences *_preferences;
+protected:
+public:
+    TemperatureConfig *temperatureConfig;
+
+    /// @brief Creates the configuration instance
+    Config();
 };

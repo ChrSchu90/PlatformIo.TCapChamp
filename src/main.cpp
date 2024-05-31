@@ -1,9 +1,8 @@
 #include <Arduino.h>
-#include <Preferences.h>
 #include <WiFiManager.h>
 #include <LittleFS.h>
 #include <WiFi.h>
-#include <ESPUI.h>
+#include <ArduinoJson.h>
 #include <arduino-timer.h>
 #include <HTTPClient.h>
 #include <RunningMedian.h>
@@ -14,16 +13,12 @@
 #include <DFRobot_GP8403.h>
 #include "OpenWeatherMap.h"
 #include "ThermistorCalc.h"
-#include "TemperatureConfig.h"
-#include "TemperatureTab.h"
-#include "SystemInfoTab.h"
-#include "WifiInfoTab.h"
+#include "Config.h"
+#include "Webinterface.h"
 #include "Secrets.h"
 
 static const bool DEBUG_LOGGING = true;														// Enable/disable logs to Serial println
 static const uint8_t SPI_BUS_THERMISTOR_OUT = VSPI;											// SPI bus used for digital potentiometer for output temperature
-static const char *KEY_SETTING_NAMESPACE = "TCapChamp";										// Preferences namespance key (limited to 15 chars)
-static const char *PREF_KEY_TEMP_OFFSET = "TempOffet";										// Preferences key for temperature offset (limited to 15 chars)
 static const uint8_t GPIO_THERMISTOR_IN = 36;												// GPIO used for real input temperature from thermistor
 static const uint8_t GPIO_FAILOVER_OUT = 27;												// GPIO used as digital output to signal that the output is now valid (failover via relays or LED)
 static const float SUPPLY_VOLTAGE = 3.3;													// Maximum Voltage ADC input
@@ -42,16 +37,10 @@ RunningMedian _thermistorInMedian(TEMP_IN_SAMPLE_CNT);
 ThermistorCalc _thermistorIn(-40, 167820, 25, 6523, 120, 302);	// Input for real temperature (Panasonic PAW-A2W-TSOD)
 ThermistorCalc _thermistorOut(-40, 167820, 25, 6523, 120, 302); // Output that simulates a Panasonic PAW-A2W-TSOD for the Panasonic T-Cap 16 KW Kit-WQC16H9E8
 Timer<5, millis> _timers;
-Preferences _preferences;
 WiFiManager _wifiManager;
 
-uint16_t _lblSensorTemp;  // TODO: remove UI stuff from main and move it into Tab
-uint16_t _lblWeatherTemp; // TODO: remove UI stuff from main and move it into Tab
-uint16_t _lblOutputTemp;  // TODO: remove UI stuff from main and move it into Tab
-TemperatureConfig *_configTemperature;
-TemperatureTab *_tabTemperature;
-SystemInfoTab *_tabSystemInfo;
-WifiInfoTab *_tabWifiInfo;
+Config *_config;
+Webinterface *_webinterface;
 
 SPIClass *_spiDigitalPoti;
 DFRobot_GP8403 *_i2cDac;
@@ -189,7 +178,7 @@ bool updateWeatherApiTemperature()
 bool updateOutputTemperature()
 {
 	float inputTemperature = !isnanf(_thermistorInTemperature) ? _thermistorInTemperature : _weatherApiTemperature;
-	float targetTemp = _configTemperature->getOutputTemperature(inputTemperature);
+	float targetTemp = _config->temperatureConfig->getOutputTemperature(inputTemperature);
 
 	bool changed = false;
 	if (!isnanf(targetTemp))
@@ -261,44 +250,25 @@ void loop()
 /// @brief Setup for the configuration for loading and storing none volatile data
 void setupConfiguration()
 {
-	// Note: Namespace name is limited to 15 chars.
-	_preferences.begin(KEY_SETTING_NAMESPACE, false);
-	_configTemperature = new TemperatureConfig(&_preferences);
+	DebugLog("Configuration initialization started");
+	_config = new Config();
+	DebugLog("Configuration initialization completed");
 }
 
 /// @brief Setup for Web UI (called by setupWifiManager after auto connect)
 void setupWebUi()
 {
-	// Create global labels
-	_lblSensorTemp = ESPUI.addControl(Label, "Sensor", String(_thermistorInTemperature) + " °C", None);
-	_lblWeatherTemp = ESPUI.addControl(Label, "Weather", String(_weatherApiTemperature) + " °C", None);
-	_lblOutputTemp = ESPUI.addControl(Label, "Output", String(_outputTemperature) + " °C", None);
+	DebugLog("Webinterface initialization started");
 
-	// Generate tabs
-	//_tabPower = ESPUI.addControl(Tab, "Power", "Power");
-	_tabTemperature = new TemperatureTab(_configTemperature);
-	_tabSystemInfo = new SystemInfoTab();
-	_tabWifiInfo = new WifiInfoTab(&_wifiManager);
+	// Creaate webinterface
+	_webinterface = new Webinterface(_config, &_wifiManager);
 
-	// TODO: Offset should be moved into the area
-	//_sldOffset = ESPUI.addControl(
-	//	Slider, "Offset", String(_temperatureOffset), None, _tabTemperature,
-	//	[](Control *sender, int type)
-	//	{
-	//		int value = sender->value.toInt();
-	//		if (_temperatureOffset != value)
-	//		{
-	//			_temperatureOffset = value;
-	//			_preferences.putInt(PREF_KEY_TEMP_OFFSET, _temperatureOffset);
-	//			ESPUI.updateSlider(sender->id, value);
-	//		}
-	//	});
-	// ESPUI.addControl(Min, "", "-15", None, _sldOffset);
-	// ESPUI.addControl(Max, "", "15", None, _sldOffset);
-	// ESPUI.addControl(Step, "", "1", None, _sldOffset);
+	// Set initial values
+	_webinterface->setSensorTemp(_thermistorInTemperature);
+	_webinterface->setWeatherTemp(_weatherApiTemperature);
+	_webinterface->setOutputTemp(_outputTemperature);
 
-	// Start ESP UI https://github.com/s00500/ESPUI
-	ESPUI.begin("Heat Pump Champ");
+	DebugLog("Webinterface initialization completed");
 }
 
 /// @brief Setup for Weather API
@@ -334,10 +304,9 @@ void setupWeatherApi()
 		WEATHER_API_UPDATE_CYCLE,
 		[](void *opaque) -> bool
 		{
-			if (updateWeatherApiTemperature())
+			if (updateWeatherApiTemperature() && _webinterface)
 			{
-				// TODO: remove UI stuff from main and move it into Tab
-				ESPUI.updateLabel(_lblWeatherTemp, String(_weatherApiTemperature) + " °C");
+				_webinterface->setWeatherTemp(_weatherApiTemperature);
 			}
 
 			return true; // Keep timer running
@@ -395,10 +364,9 @@ void setupThermistorInputReading()
 		TEMP_IN_SAMPLE_CYCLE,
 		[](void *opaque) -> bool
 		{
-			if (updateThermistorInTemperature())
+			if (updateThermistorInTemperature() && _webinterface)
 			{
-				// TODO: remove UI stuff from main and move it into Tab
-				ESPUI.updateLabel(_lblSensorTemp, String(_thermistorInTemperature) + " °C");
+				_webinterface->setSensorTemp(_thermistorInTemperature);
 			}
 
 			return true; // Keep timer running
@@ -437,10 +405,9 @@ void setupOutputTemperature()
 		TEMP_OUT_UPDATE_CYCLE,
 		[](void *opaque) -> bool
 		{
-			if (updateOutputTemperature())
+			if (updateOutputTemperature() && _webinterface)
 			{
-				// TODO: remove UI stuff from main and move it into Tab
-				ESPUI.updateLabel(_lblOutputTemp, String(_outputTemperature) + " °C");
+				_webinterface->setOutputTemp(_outputTemperature);
 			}
 
 			return true;
