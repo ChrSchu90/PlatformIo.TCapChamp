@@ -10,22 +10,28 @@
 */
 
 /// @brief Creates the web UI instance
+/// @param port the webinterface port
 /// @param config the configuration
 /// @param wifiManager the WiFi manager
-Webinterface::Webinterface(Config *config, WiFiManager *wifiManager)
+Webinterface::Webinterface(uint16_t port, Config *config, WiFiManager *wifiManager)
 {
     // Create global labels
     _lblSensorTemp = ESPUI.addControl(Label, "Sensor", String(NAN) + " °C", None);
-    _lblWeatherTemp = ESPUI.addControl(Label, "Weather", String(NAN) + " °C", None);
+    _lblWeatherTemp = ESPUI.addControl(Label, "Weather API", String(NAN) + " °C", None);
     _lblOutputTemp = ESPUI.addControl(Label, "Output", String(NAN) + " °C", None);
 
     // Create tabs
     temperatureTab = new TemperatureTab(config->temperatureConfig);
     systemInfoTab = new SystemInfoTab();
     wifiInfoTab = new WifiInfoTab(wifiManager);
-
+   
     // Start ESP UI https://github.com/s00500/ESPUI
-    ESPUI.begin("T-Cap Champ");
+    //ESPUI.setVerbosity(Verbosity::Verbose);
+    //ESPUI.prepareFileSystem();  //Copy across current version of ESPUI resources
+    //ESPUI.list(); //List all files on LittleFS, for info
+    //ESPUI.jsonInitialDocumentSize = 12000;
+    //ESPUI.jsonUpdateDocumentSize = 4000;
+    ESPUI.begin("T-Cap Champ", nullptr, nullptr, port);
 };
 
 /// @brief Updates the sensor temperature inside webinterface
@@ -212,7 +218,7 @@ TemperatureAreaTab::TemperatureAreaTab(TemperatureTab *tab, TemperatureArea *con
         this);
     ESPUI.addControl(Min, "", "-20", None, _sldOffset);
     ESPUI.addControl(Max, "", "20", None, _sldOffset);
-    ESPUI.addControl(Step, "", "1", None, _sldOffset);
+    ESPUI.addControl(Step, "", "1", None, _sldOffset);   
 
     updateStatus();
 }
@@ -282,6 +288,45 @@ TemperatureTab::TemperatureTab(TemperatureConfig *config) : _config(config)
     ESPUI.addControl(Max, "", "30", None, _sldManualTemp);
     ESPUI.addControl(Step, "", "1", None, _sldManualTemp);
 
+    ////
+    //// TEST START
+    ////  
+
+    auto testSliderGroup = ESPUI.addControl(Label, "Temperature Adjustment", "", None, _tab);
+    ESPUI.setElementStyle(testSliderGroup, "background-color: unset; width: 0px; height: 0px; display: none;");
+    //String labelStyle = "background-color: unset; width: 20%; text-align-last: left;";
+    //String labelStyle = "background-color: unset; width: 30%; height: 10px;";
+	//String inputStyle = "width: 60%; text-align-last: right;";
+	//String inputStyle = "width: 60%; text-align-last: right;";
+	String inputStyle = "width: 30%;";
+    String labelStyle = "background-color: unset; width: 70%; text-align-last: left;";
+    //for (short i = 25; i >= -20; i--)
+    for (short i = 1; i >= 1; i--)
+    {
+        auto inputCtl = ESPUI.addControl(
+            Number, "", String(i), None, testSliderGroup,
+            [](Control *sender, int type, void *UserInfo)
+        {
+            Serial.println("Value changed to " + String(sender->value));
+        },
+        this);
+        ESPUI.setElementStyle(inputCtl, inputStyle);
+
+        auto lblCtl = ESPUI.addControl(Label, "", "°C  at " + String(i) + " °C", None, testSliderGroup);
+        ESPUI.setElementStyle(lblCtl, labelStyle);
+        
+        
+
+        //auto inputCtl = ESPUI.addControl(Slider, "", String(i), None, testSliderGroup);
+        //ESPUI.setElementStyle(inputCtl, inputStyle);
+        //ESPUI.addControl(Min, "", String(i - 10), None, inputCtl);
+        //ESPUI.addControl(Max, "", String(i + 10), None, inputCtl);
+    }
+
+    ////
+    //// TEST END
+    ////
+    
     for (size_t i = 0; i < TEMP_AREA_AMOUNT; i++)
     {
         _areas[i] = new TemperatureAreaTab(this, config->getArea(i));

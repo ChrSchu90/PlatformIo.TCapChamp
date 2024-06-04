@@ -21,11 +21,9 @@ struct ApiResponse
     const String errorMessage;
 };
 
-/**
- * @brief Implements the OpenWeatherMap API https://openweathermap.org/current
- * NOTE: Free API is limited to 60 calls/minute or 1,000,000 calls/month
- * A API key can be created for free at https://home.openweathermap.org/users/sign_up
- */
+/// @brief Implements the OpenWeatherMap API https://openweathermap.org/current
+/// NOTE: Free API is limited to 60 calls/minute or 1,000,000 calls/month
+/// A API key can be created for free at https://home.openweathermap.org/users/sign_up
 class OpenWeatherMap
 {
 private:
@@ -55,5 +53,5 @@ public:
 
     /// @brief Sends a API request (may take a while and will block)
     /// @return the API response
-    ApiResponse requestTemperature();
+    ApiResponse request();
 };

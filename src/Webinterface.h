@@ -1,6 +1,7 @@
+#pragma once
+
 #include <Config.h>
 #include <WiFiManager.h>
-#pragma once
 
 // Pre-define class
 class TemperatureAreaTab;
@@ -124,9 +125,10 @@ public:
     WifiInfoTab *wifiInfoTab;
 
     /// @brief Creates the web UI instance
+    /// @param port the webinterface port
     /// @param config the configuration
     /// @param wifiManager the WiFi manager
-    Webinterface(Config *config, WiFiManager *wifiManager);
+    Webinterface(const uint16_t port, Config *config, WiFiManager *wifiManager);
 
     /// @brief Updates the sensor temperature inside webinterface
     /// @param temperature the new temperature

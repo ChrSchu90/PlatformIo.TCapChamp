@@ -10,11 +10,8 @@
 Config::Config() : _preferences(new Preferences())
 {
     _preferences->begin(KEY_SETTING_NAMESPACE, false);
-	temperatureConfig = new TemperatureConfig(_preferences);
+    temperatureConfig = new TemperatureConfig(_preferences);
 };
-
-
-
 
 /*
 ##############################################
@@ -106,9 +103,6 @@ TemperatureArea *TemperatureConfig::getArea(float temperature)
 
     return nullptr;
 }
-
-
-
 
 /*
 ##############################################

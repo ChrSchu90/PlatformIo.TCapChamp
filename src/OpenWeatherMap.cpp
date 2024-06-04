@@ -8,6 +8,7 @@
 /// @param cityId The city ID can be taken from https://openweathermap.org/ by search from URL (https://openweathermap.org/city/xxxxxxx)
 OpenWeatherMap::OpenWeatherMap(String apiKey, unsigned int cityId) : apiUrl("https://api.openweathermap.org/data/2.5/weather?id=" + String(cityId) + "&lang=en" + "&units=METRIC" + "&appid=" + apiKey)
 {
+    _temperature = NAN;
 }
 
 /// @brief Creates an instance of the OpenWeatherMap API
@@ -16,11 +17,12 @@ OpenWeatherMap::OpenWeatherMap(String apiKey, unsigned int cityId) : apiUrl("htt
 /// @param longitude Location longitude (can be taken from google maps with right-click)
 OpenWeatherMap::OpenWeatherMap(String apiKey, double latitude, double longitude) : apiUrl("https://api.openweathermap.org/data/2.5/weather?lat=" + String(latitude, 6) + "&lon=" + String(longitude, 6) + "&lang=en" + "&units=METRIC" + "&appid=" + apiKey)
 {
+    _temperature = NAN;
 }
 
 /// @brief Sends a API request (may take a while and will block)
 /// @return the API response
-ApiResponse OpenWeatherMap::requestTemperature()
+ApiResponse OpenWeatherMap::request()
 {
     if (WiFi.status() != WL_CONNECTED)
     {
@@ -31,7 +33,7 @@ ApiResponse OpenWeatherMap::requestTemperature()
     client.setReuse(false);
     client.begin(apiUrl);
     int httpCode = client.GET();
-    if (httpCode != 200)
+    if (httpCode != HTTP_CODE_OK)
     {
         JsonDocument doc;
         DeserializationError error = deserializeJson(doc, client.getString());

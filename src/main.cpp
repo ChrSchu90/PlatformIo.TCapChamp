@@ -2,13 +2,9 @@
 #include <WiFiManager.h>
 #include <LittleFS.h>
 #include <WiFi.h>
-#include <ArduinoJson.h>
 #include <arduino-timer.h>
-#include <HTTPClient.h>
 #include <RunningMedian.h>
 #include <SPI.h>
-#include <stdlib.h>
-#include <nvs_flash.h>
 #include <Wire.h>
 #include <DFRobot_GP8403.h>
 #include "OpenWeatherMap.h"
@@ -35,17 +31,15 @@ static const float DIGI_POTI_PRERESISTANCE = 5000.0f;										// Digital potent
 
 RunningMedian _thermistorInMedian(TEMP_IN_SAMPLE_CNT);
 ThermistorCalc _thermistorIn(-40, 167820, 25, 6523, 120, 302);	// Input for real temperature (Panasonic PAW-A2W-TSOD)
-ThermistorCalc _thermistorOut(-40, 167820, 25, 6523, 120, 302); // Output that simulates a Panasonic PAW-A2W-TSOD for the Panasonic T-Cap 16 KW Kit-WQC16H9E8
+ThermistorCalc _thermistorOut(-40, 167820, 25, 6523, 120, 302); // Output that simulates a Panasonic PAW-A2W-TSOD for the Panasonic T-Cap
 Timer<5, millis> _timers;
 WiFiManager _wifiManager;
-
 Config *_config;
+OpenWeatherMap *_weatherApi;
 Webinterface *_webinterface;
-
 SPIClass *_spiDigitalPoti;
 DFRobot_GP8403 *_i2cDac;
 
-String _weatherApiUrl;
 float _thermistorInTemperature = NAN;
 float _weatherApiTemperature = NAN;
 float _outputTemperature = NAN;
@@ -108,68 +102,24 @@ float getCurrentThermistorInTemperature(bool logError)
 	return _thermistorIn.celsiusFromResistance(resistance);
 }
 
-/// @brief Gets the temperature from OpenWeatherMap see: https://openweathermap.org/current (60 calls/minute or 1,000,000 calls/month)
-/// @return The temperature from the API response or NAN if request has failed
-float getWeatherApiTemperature()
-{
-	if (_weatherApiUrl.length() < 1)
-	{
-		return NAN;
-	}
-
-	if (WiFi.status() != WL_CONNECTED)
-	{
-		DebugLog("getWeatherApiTemperature: WiFi not connected");
-		return NAN;
-	}
-
-	HTTPClient http;
-	http.begin(_weatherApiUrl);
-	int httpCode = http.GET();
-	if (httpCode != 200)
-	{
-		DebugLog("getWeatherApiTemperature: HTTP Error " + String(httpCode));
-		JsonDocument doc;
-		DeserializationError error = deserializeJson(doc, http.getString());
-		if (error || !doc.containsKey("message"))
-		{
-			http.end();
-			return NAN;
-		}
-
-		String errMessage = doc["message"];
-		DebugLog("getWeatherApiTemperature: Message=" + errMessage);
-		http.end();
-		return NAN;
-	}
-
-	String response = http.getString();
-	http.end();
-	DebugLog("getWeatherApiTemperature: API response=" + String(response));
-
-	JsonDocument doc;
-	DeserializationError error = deserializeJson(doc, response);
-	if (error)
-	{
-		DebugLog("getWeatherApiTemperature: DeserializationError=" + String(error.c_str()));
-		doc.clear();
-		return NAN;
-	}
-
-	float temperature = doc["main"]["temp"];
-	doc.clear();
-	DebugLog("getWeatherApiTemperature: Temperature=" + String(temperature));
-
-	return temperature;
-}
-
 ///	@brief Updates the _weatherApiTemperature via API from
 /// @return If the value has changed
 bool updateWeatherApiTemperature()
 {
-	float temperature = getWeatherApiTemperature();
-	bool changed = _weatherApiTemperature != temperature;
-	_weatherApiTemperature = temperature;
+	if (!_weatherApi)
+	{
+		return false;
+	}
+
+	auto request = _weatherApi->request();
+	if (!request.successful)
+	{
+		DebugLog("updateWeatherApiTemperature: Error on update temperature by weather API: " + request.errorMessage);
+		return false;
+	}
+
+	bool changed = _weatherApiTemperature != request.temperature;
+	_weatherApiTemperature = request.temperature;
 	return changed;
 }
 
@@ -250,30 +200,32 @@ void loop()
 /// @brief Setup for the configuration for loading and storing none volatile data
 void setupConfiguration()
 {
-	DebugLog("Configuration initialization started");
+	DebugLog("setupConfiguration: started");
 	_config = new Config();
-	DebugLog("Configuration initialization completed");
+	DebugLog("setupConfiguration: completed");
 }
 
 /// @brief Setup for Web UI (called by setupWifiManager after auto connect)
-void setupWebUi()
+void setupWebinterface()
 {
-	DebugLog("Webinterface initialization started");
+	DebugLog("setupWebinterface: started");
 
 	// Creaate webinterface
-	_webinterface = new Webinterface(_config, &_wifiManager);
+	_webinterface = new Webinterface(8080, _config, &_wifiManager);
 
 	// Set initial values
 	_webinterface->setSensorTemp(_thermistorInTemperature);
 	_webinterface->setWeatherTemp(_weatherApiTemperature);
 	_webinterface->setOutputTemp(_outputTemperature);
 
-	DebugLog("Webinterface initialization completed");
+	DebugLog("setupWebinterface: completed");
 }
 
 /// @brief Setup for Weather API
 void setupWeatherApi()
 {
+	DebugLog("setupWeatherApi: started");
+
 	if (WEATHER_API_KEY.length() < 1)
 	{
 		DebugLog("setupWeatherApi: API key missing, weather API can't be used!");
@@ -283,12 +235,14 @@ void setupWeatherApi()
 	if (WEATHER_CITY_ID > 0)
 	{
 		DebugLog("setupWeatherApi: Using City ID");
-		_weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=" + String(WEATHER_CITY_ID) + "&lang=en" + "&units=METRIC" + "&appid=" + WEATHER_API_KEY;
+		_weatherApi = new OpenWeatherMap(WEATHER_API_KEY, WEATHER_CITY_ID);
+		//_weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=" + String(WEATHER_CITY_ID) + "&lang=en" + "&units=METRIC" + "&appid=" + WEATHER_API_KEY;
 	}
 	else if (abs(WEATHER_LATITUDE) > 0 && abs(WEATHER_LONGITUDE) > 0)
 	{
 		DebugLog("setupWeatherApi: Using Latitude and Longitude");
-		_weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?lat=" + String(WEATHER_LATITUDE, 6) + "&lon=" + String(WEATHER_LONGITUDE, 6) + "&lang=en" + "&units=METRIC" + "&appid=" + WEATHER_API_KEY;
+		_weatherApi = new OpenWeatherMap(WEATHER_API_KEY, WEATHER_LATITUDE, WEATHER_LONGITUDE);
+		//_weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?lat=" + String(WEATHER_LATITUDE, 6) + "&lon=" + String(WEATHER_LONGITUDE, 6) + "&lang=en" + "&units=METRIC" + "&appid=" + WEATHER_API_KEY;
 	}
 	else
 	{
@@ -296,9 +250,11 @@ void setupWeatherApi()
 		return;
 	}
 
-	DebugLog("setupWeatherApi: _weatherApiUrl=" + _weatherApiUrl);
-	_weatherApiTemperature = getWeatherApiTemperature(); // initial weather update
-	DebugLog("setupWeatherApi: initial _weatherApiTemperature=" + String(_weatherApiTemperature));
+	DebugLog("setupWeatherApi: _weatherApiUrl=" + _weatherApi->apiUrl);
+	if (updateWeatherApiTemperature())
+	{
+		DebugLog("setupWeatherApi: initial _weatherApiTemperature=" + String(_weatherApiTemperature));
+	}
 
 	_timers.every(
 		WEATHER_API_UPDATE_CYCLE,
@@ -316,6 +272,8 @@ void setupWeatherApi()
 /// @brief Setup for WiFiManager as blocking implementation if not configured.
 void setupWifiManager()
 {
+	DebugLog("setupWifiManager: started");
+
 	// explicitly set mode, esp defaults to STA+AP
 	WiFi.mode(WIFI_STA);
 
@@ -325,6 +283,7 @@ void setupWifiManager()
 	_wifiManager.setEnableConfigPortal(!configurued);
 	_wifiManager.setConfigPortalBlocking(!configurued);
 	_wifiManager.setConfigPortalTimeout(86400); // 24h timeout
+	//_wifiManager.setHttpPort(8080);
 
 	// automatically connect using saved credentials if they exist
 	// If connection fails it starts an access point with the specified name
@@ -358,6 +317,8 @@ void setupWifiManager()
 /// @brief Setup reading of input thermistor
 void setupThermistorInputReading()
 {
+	DebugLog("setupThermistorInputReading: started");
+
 	// initial reading without building a median
 	_thermistorInTemperature = getCurrentThermistorInTemperature(true);
 	_timers.every(
@@ -371,11 +332,15 @@ void setupThermistorInputReading()
 
 			return true; // Keep timer running
 		});
+
+	DebugLog("setupThermistorInputReading: completed");
 }
 
 /// @brief Setup of the power limiter via 0-10V analog output
 void setupPowerLimit()
 {
+	DebugLog("setupPowerLimit: started");
+
 	DFRobot_GP8403 *dac = new DFRobot_GP8403(&Wire, 0x5F);
 	if (dac->begin() != 0)
 	{
@@ -384,17 +349,19 @@ void setupPowerLimit()
 	else
 	{
 		_i2cDac = dac;
-		DebugLog("setupPowerLimit: Successful init 0-10V output via I2C");
 		_i2cDac->setDACOutRange(dac->eOutputRange10V);
 		_i2cDac->setDACOutVoltage(0000, 0); // mV / Channel
-		//delay(1000); // wait before store, due to exceptions
-		//dac.store();
+		DebugLog("setupPowerLimit: Successful init 0-10V output via I2C");
+		// delay(1000); // wait before store, due to exceptions
+		// dac.store();
 	}
 }
 
 /// @brief Setup digital potentiometer for output temperature
 void setupOutputTemperature()
 {
+	DebugLog("setupOutputTemperature: started");
+
 	_spiDigitalPoti = new SPIClass(SPI_BUS_THERMISTOR_OUT);
 	_spiDigitalPoti->begin();
 	pinMode(_spiDigitalPoti->pinSS(), OUTPUT);
@@ -412,6 +379,8 @@ void setupOutputTemperature()
 
 			return true;
 		});
+
+	DebugLog("setupOutputTemperature: completed");
 }
 
 /// @brief Put your setup code here, to run once:
@@ -423,11 +392,15 @@ void setup()
 		delay(2000); // Delay for serial monitor attach
 	}
 
+	DebugLog("setup: started");
+
 	setupConfiguration();
 	setupThermistorInputReading();
 	setupWifiManager();
 	setupWeatherApi();
 	setupPowerLimit();
 	setupOutputTemperature();
-	setupWebUi();
+	setupWebinterface();
+
+	DebugLog("setup: completed");
 }
