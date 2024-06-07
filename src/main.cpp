@@ -194,7 +194,11 @@ bool updateThermistorInTemperature()
 void loop()
 {
 	_timers.tick();
-	_wifiManager.process();
+
+	//if(_wifiManager.getWiFiIsSaved())
+	//{	
+		_wifiManager.process();
+	//}
 }
 
 /// @brief Setup for the configuration for loading and storing none volatile data
@@ -280,8 +284,8 @@ void setupWifiManager()
 	// Start config portal only if there is no WiFi configuration
 	// And enable portal blocking for configuration
 	bool configurued = _wifiManager.getWiFiIsSaved();
-	_wifiManager.setEnableConfigPortal(!configurued);
-	_wifiManager.setConfigPortalBlocking(!configurued);
+	//_wifiManager.setEnableConfigPortal(!configurued);
+	_wifiManager.setConfigPortalBlocking(false);
 	_wifiManager.setConfigPortalTimeout(86400); // 24h timeout
 	//_wifiManager.setHttpPort(8080);
 

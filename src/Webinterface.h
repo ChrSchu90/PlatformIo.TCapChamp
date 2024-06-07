@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Config.h>
 #include <WiFiManager.h>
+#include "Config.h"
 
 // Pre-define class
 class TemperatureAreaTab;
