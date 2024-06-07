@@ -1,24 +1,39 @@
 #pragma once
 
+#include <HTTPClient.h>
+
+enum Error 
+{
+    /// @brief No error / request successful
+    None = 0,
+    /// @brief  WiFi is not connected
+    WifiNotConnected = 1,
+    /// @brief HTTP error
+    HttpError = 2,
+    /// @brief Error on json deserialization
+    DeserializationFailed = 3,
+};
+
 /// @brief Represents the API response with temperature and error information if request failed
 struct ApiResponse
 {
-    /// @brief Creates a new insatnce of an successful API request
-    /// @param temperature the successful received temperature
-    ApiResponse(float temperature) : successful(true), errorMessage(""), temperature(temperature){};
+    /// @brief Creates a new instance of an successful API request
+    ApiResponse(float temperature) : successful(true), error(None), httpCode(HTTP_CODE_OK), temperature(temperature){};
 
-    /// @brief Creates a new insatnce of an unsuccessful API request
-    /// @param errorMessage The error message
-    ApiResponse(String errorMessage) : successful(false), errorMessage(errorMessage), temperature(NAN){};
+    /// @brief Creates a new instance of an failed API request
+    ApiResponse(Error error, int httpCode) : successful(false), error(error), httpCode(httpCode), temperature(NAN){};
 
     /// @brief Gets if the request was successful
     const bool successful;
 
+    /// @brief Error
+    const Error error;
+
+    /// @brief HTTP code RFC7231
+    const int httpCode;
+
     /// @brief Gets the termperature or NAN if request failed
     const float temperature;
-
-    /// @brief Gets the error message if the request has failed
-    const String errorMessage;
 };
 
 /// @brief Implements the OpenWeatherMap API https://openweathermap.org/current

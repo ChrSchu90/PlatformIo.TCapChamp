@@ -1,12 +1,13 @@
 #include <ArduinoJson.h>
-#include <HTTPClient.h>
 #include <WiFi.h>
 #include "OpenWeatherMap.h"
+#define LOG_LEVEL NONE
+#include "SerialLogging.h"
 
 /// @brief Creates an instance of the OpenWeatherMap API
 /// @param apiKey Your API key
 /// @param cityId The city ID can be taken from https://openweathermap.org/ by search from URL (https://openweathermap.org/city/xxxxxxx)
-OpenWeatherMap::OpenWeatherMap(String apiKey, unsigned int cityId) : apiUrl("https://api.openweathermap.org/data/2.5/weather?id=" + String(cityId) + "&lang=en" + "&units=METRIC" + "&appid=" + apiKey)
+OpenWeatherMap::OpenWeatherMap(String apiKey, unsigned int cityId) : apiUrl(String(F("https://api.openweathermap.org/data/2.5/weather?")) + F("id=") + String(cityId) + F("&lang=en&units=METRIC&appid=") + apiKey)
 {
     _temperature = NAN;
 }
@@ -15,7 +16,7 @@ OpenWeatherMap::OpenWeatherMap(String apiKey, unsigned int cityId) : apiUrl("htt
 /// @param apiKey Your API key
 /// @param latitude Location latitude (can be taken from google maps with right-click)
 /// @param longitude Location longitude (can be taken from google maps with right-click)
-OpenWeatherMap::OpenWeatherMap(String apiKey, double latitude, double longitude) : apiUrl("https://api.openweathermap.org/data/2.5/weather?lat=" + String(latitude, 6) + "&lon=" + String(longitude, 6) + "&lang=en" + "&units=METRIC" + "&appid=" + apiKey)
+OpenWeatherMap::OpenWeatherMap(String apiKey, double latitude, double longitude) : apiUrl(String(F("https://api.openweathermap.org/data/2.5/weather?lat=")) + String(latitude, 6) + F("&lon=") + String(longitude, 6) + F("&lang=en&units=METRIC&appid=") + apiKey)
 {
     _temperature = NAN;
 }
@@ -26,7 +27,10 @@ ApiResponse OpenWeatherMap::request()
 {
     if (WiFi.status() != WL_CONNECTED)
     {
-        return ApiResponse("WiFi not connected");
+#ifdef LOG_WARNING
+        LOG_WARNING(F("OpenWeatherMap"), F("request"), F("WiFi is not connected"));
+#endif
+        return ApiResponse(WifiNotConnected, HTTP_CODE_REQUEST_TIMEOUT);
     }
 
     HTTPClient client;
@@ -35,39 +39,40 @@ ApiResponse OpenWeatherMap::request()
     int httpCode = client.GET();
     if (httpCode != HTTP_CODE_OK)
     {
-        JsonDocument doc;
-        DeserializationError error = deserializeJson(doc, client.getString());
-        if (error || !doc.containsKey("message"))
-        {
-            client.end();
-            doc.clear();
-            return ApiResponse("HTTP Error " + String(httpCode));
-        }
-
-        String errMessage = doc["message"];
         client.end();
-        doc.clear();
-        return ApiResponse("HTTP Error=" + String(httpCode) + " Message=" + errMessage);
+#ifdef LOG_ERROR
+        LOG_ERROR(F("OpenWeatherMap"), F("request"), F("HTTP Error code = ") + httpCode);
+#endif
+        return ApiResponse(HttpError, httpCode);
     }
 
-    String response = client.getString();
+    auto response = client.getString();
     client.end();
+#ifdef LOG_INFO
+    LOG_INFO(F("OpenWeatherMap"), F("request"), F("response = ") + response);
+#endif
 
     JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, response);
-    if (error)
+    auto error = deserializeJson(doc, response);
+    if (error != DeserializationError::Ok)
     {
+#ifdef LOG_ERROR
+        LOG_ERROR(F("OpenWeatherMap"), F("request"), F("DeserializationError = ") + error.c_str());
+#endif
         doc.clear();
-        return ApiResponse("DeserializationError=" + String(error.c_str()));
+        return ApiResponse(DeserializationFailed, httpCode);
     }
 
-    _temperature = doc["main"]["temp"];
+    _temperature = doc[F("main")][F("temp")];
+#ifdef LOG_ERROR
+    LOG_ERROR(F("OpenWeatherMap"), F("request"), F("_temperature = ") + _temperature);
+#endif
     doc.clear();
     return ApiResponse(_temperature);
 }
 
 /*
-Example API response data/2.5/weather:
+Example OpenWeather API response (https://api.openweathermap.org/data/2.5/weather?id=YourCityId&lang=en&units=METRIC&appid=YourApiKey):
 {
     "base": "stations",
     "clouds": {

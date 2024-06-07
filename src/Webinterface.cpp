@@ -1,7 +1,10 @@
 #include <Arduino.h>
 #include <WiFiManager.h>
+//#define DEBUG_ESPUI 1
 #include <ESPUI.h>
 #include "Webinterface.h"
+#define LOG_LEVEL NONE
+#include "SerialLogging.h"
 
 /*
 ##############################################
@@ -15,6 +18,9 @@
 /// @param wifiManager the WiFi manager
 Webinterface::Webinterface(uint16_t port, Config *config, WiFiManager *wifiManager)
 {
+#ifdef DEBUG_ESPUI
+    ESPUI.setVerbosity(Verbosity::Verbose); 
+#endif
     // Create global labels
     _lblSensorTemp = ESPUI.addControl(Label, "Sensor", String(NAN) + " °C", None);
     _lblWeatherTemp = ESPUI.addControl(Label, "Weather API", String(NAN) + " °C", None);
@@ -26,7 +32,6 @@ Webinterface::Webinterface(uint16_t port, Config *config, WiFiManager *wifiManag
     wifiInfoTab = new WifiInfoTab(wifiManager);
    
     // Start ESP UI https://github.com/s00500/ESPUI
-    //ESPUI.setVerbosity(Verbosity::Verbose);
     //ESPUI.prepareFileSystem();  //Copy across current version of ESPUI resources
     //ESPUI.list(); //List all files on LittleFS, for info
     //ESPUI.jsonInitialDocumentSize = 12000;
