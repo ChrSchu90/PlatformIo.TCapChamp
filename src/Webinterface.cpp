@@ -1,9 +1,10 @@
+#define LOG_LEVEL NONE
+//#define DEBUG_ESPUI 1
+
 #include <Arduino.h>
 #include <WiFiManager.h>
-//#define DEBUG_ESPUI 1
 #include <ESPUI.h>
 #include "Webinterface.h"
-#define LOG_LEVEL NONE
 #include "SerialLogging.h"
 
 /*

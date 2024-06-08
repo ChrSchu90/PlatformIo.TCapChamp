@@ -1,7 +1,8 @@
+#define LOG_LEVEL NONE
+
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include "OpenWeatherMap.h"
-#define LOG_LEVEL NONE
 #include "SerialLogging.h"
 
 /// @brief Creates an instance of the OpenWeatherMap API

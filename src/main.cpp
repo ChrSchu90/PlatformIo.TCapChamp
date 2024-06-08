@@ -1,7 +1,7 @@
+#define LOG_LEVEL NONE
+
 #include <Arduino.h>
 #include <WiFiManager.h>
-#include <LittleFS.h>
-#include <WiFi.h>
 #include <arduino-timer.h>
 #include <RunningMedian.h>
 #include <SPI.h>
@@ -12,7 +12,6 @@
 #include "Config.h"
 #include "Webinterface.h"
 #include "Secrets.h"
-#define LOG_LEVEL NONE
 #include "SerialLogging.h"
 
 Timer<5, millis> _timers;	 // Timer collection for time based operations
