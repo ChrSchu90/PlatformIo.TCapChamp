@@ -3,8 +3,15 @@
 #include <WiFiManager.h>
 #include "Config.h"
 
-// Pre-define class
+static const char * NO_VALUE = "";                                      // Empty string for no value
+static const String MAX_TEMPERATURE_VALUE = String(MAX_TEMPERATURE);    // Maximum supported temperature value
+static const String MIN_TEMPERATURE_VALUE = String(MIN_TEMPERATURE);    // Minimum supported temperature value
+static const String MAX_POWER_LIMIT_VALUE = String(MAX_POWER_LIMIT);    // Maximum supported power limit value
+static const String MIN_POWER_LIMIT_VALUE = String(MIN_POWER_LIMIT);    // Minimum supported power limit valie
+static const String STEP_POWER_LIMIT_VALUE = String("5");               // Slider step power limit value
+
 class TemperatureAreaTab;
+class PowerAreaTab;
 
 /// @brief Implements a system information tab inside the Webinterface
 class SystemInfoTab
@@ -83,6 +90,57 @@ public:
     void updateStatus();
 };
 
+/// @brief Web UI tab to interact with the Power Configuration
+class PowerTab
+{
+private:
+    PowerAreaTab *_areas[POWER_AREA_AMOUNT];
+    PowerConfig *_config;
+    uint16_t _tab;
+    uint16_t _swManualMode;
+    uint16_t _sldManualPower;
+
+protected:
+public:
+    /// @brief Creates a new tab for the power configuration inside the Web interface
+    /// @param config the power configuration
+    PowerTab(PowerConfig *config);
+
+    /// @brief Gets the ID of the UI Tab
+    uint16_t getTabId() { return _tab; };
+
+    /// @brief Forces an update of the UI values
+    void update();
+
+    /// @brief Foreces an update of the status indicator to make a invalid configuration visible
+    void updateStatus();
+};
+
+/// @brief Web UI temperature element that represents a power limit area
+class PowerAreaTab
+{
+private:
+    PowerTab *_tab;
+    PowerArea *_config;
+    uint16_t _swEnabled;
+    uint16_t _sldStart;
+    uint16_t _sldEnd;
+    uint16_t _sldPowerLimit;
+
+protected:
+public:
+    /// @brief Creates a area for the power limit configuration inside the Web interface
+    /// @param tab the parent power limit tab
+    /// @param config the power limit area configuration
+    PowerAreaTab(PowerTab *tab, PowerArea *config);
+
+    /// @brief Forces an update of the UI values
+    void update();
+
+    /// @brief Foreces an update of the status indicator to make a invalid configuration visible
+    void updateStatus();
+};
+
 /// @brief Implements a WiFi information tab inside the Webinterface
 class WifiInfoTab
 {
@@ -114,13 +172,15 @@ public:
 class Webinterface
 {
 private:
-uint16_t _lblSensorTemp;
-uint16_t _lblWeatherTemp;
-uint16_t _lblOutputTemp;
+    uint16_t _lblSensorTemp;
+    uint16_t _lblWeatherTemp;
+    uint16_t _lblOutputTemp;
+    uint16_t _lblOutputPower;
 
 protected:
 public:
     TemperatureTab *temperatureTab;
+    PowerTab *powerTab;
     SystemInfoTab *systemInfoTab;
     WifiInfoTab *wifiInfoTab;
 
@@ -141,4 +201,8 @@ public:
     /// @brief Updates the output temperature inside webinterface
     /// @param temperature the new temperature
     void setOutputTemp(const float temperature);
+
+    /// @brief Updates the output power limit inside webinterface
+    /// @param powerLimit the new power limit
+    void setOuputPowerLimit(const uint8_t powerLimit);
 };

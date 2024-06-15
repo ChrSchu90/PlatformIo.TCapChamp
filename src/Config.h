@@ -2,17 +2,30 @@
 
 #include <Preferences.h>
 
-static const size_t TEMP_AREA_AMOUNT = 6;
-static const char *KEY_SETTING_NAMESPACE = "TCapChamp";			 // Preferences namespance key (limited to 15 chars)
-static const char *KEY_SETING_MANUAL_MODE = "ManualMode";        // Preferences key for manual mode (limited to 15 chars)
-static const char *KEY_SETING_MANUAL_TEMP = "ManualTemp";        // Preferences key for manual temperature (limited to 15 chars)
-static const char *KEY_SETING_TEMP_AREA_ENABLED = "TempEnabled"; // Preferences key area enabled/disabled NOTE: WITHOUT INDEX
-static const char *KEY_SETING_TEMP_AREA_START = "TempStart";     // Preferences key area start temperature NOTE: WITHOUT INDEX
-static const char *KEY_SETING_TEMP_AREA_END = "TempEnd";         // Preferences key area end temperature NOTE: WITHOUT INDEX
-static const char *KEY_SETING_TEMP_AREA_OFFSET = "TempOffset";   // Preferences key area temperature offset NOTE: WITHOUT INDEX
+static const size_t TEMP_AREA_AMOUNT = 6;           // Amount of temperature areas
+static const size_t POWER_AREA_AMOUNT = 2;          // Amount of power areas
 
-// Pre-define class
+#define MIN_TEMPERATURE -20                         // Minimum supported temperature
+#define MAX_TEMPERATURE 30                          // Maximum supported temperature
+#define KEY_SETTINGS_NAMESPACE "TCapChamp"          // Preferences namespance key (limited to 15 chars)
+#define KEY_SETTING_TEMP_MANUAL_MODE "TempManual"   // Preferences key for manual temperature mode (limited to 15 chars)
+#define KEY_SETTING_TEMP_MANUAL_TEMP "ManualTemp"   // Preferences key for manual temperature (limited to 15 chars)
+#define KEY_SETTING_TEMP_AREA_ENABLED "TempEnabled" // Preferences key area enabled/disabled NOTE: WITHOUT INDEX
+#define KEY_SETTING_TEMP_AREA_START "TempStart"     // Preferences key area start temperature NOTE: WITHOUT INDEX
+#define KEY_SETTING_TEMP_AREA_END "TempEnd"         // Preferences key area end temperature NOTE: WITHOUT INDEX
+#define KEY_SETTING_TEMP_AREA_OFFSET "TempOffset"   // Preferences key area temperature offset NOTE: WITHOUT INDEX
+
+#define MIN_POWER_LIMIT 0                             // Minimum supported power limit in %
+#define MAX_POWER_LIMIT 100                           // Maximum supported power limit in %
+#define KEY_SETTING_POWER_MANUAL_MODE "PowerManual"   // Preferences key for manual power mode (limited to 15 chars)
+#define KEY_SETTING_POWER_MANUAL_POWER "ManualPower"  // Preferences key for manual power (limited to 15 chars)
+#define KEY_SETTING_POWER_AREA_ENABLED "PowerEnabled" // Preferences key area enabled/disabled NOTE: WITHOUT INDEX
+#define KEY_SETTING_POWER_AREA_START "PowerStart"     // Preferences key area start temperature NOTE: WITHOUT INDEX
+#define KEY_SETTING_POWER_AREA_END "PowerEnd"         // Preferences key area end temperature NOTE: WITHOUT INDEX
+#define KEY_SETTING_POWER_AREA_LIMIT "PowerLimit"     // Preferences key area power limit NOTE: WITHOUT INDEX
+
 class TemperatureArea;
+class PowerArea;
 
 /// @brief Holds the temperature configuration
 class TemperatureConfig
@@ -21,7 +34,7 @@ private:
     TemperatureArea *_areas[TEMP_AREA_AMOUNT];
     Preferences *_preferences;
     bool _manualMode;
-    int _manualTemperature;
+    int8_t _manualTemperature;
 
 protected:
 public:
@@ -34,14 +47,16 @@ public:
 
     /// @brief Sets if the manual mode is active
     /// @param manualMode manual mode enabled/disabled
-    void setManualMode(bool manualMode);
+    /// @return the new value after limit check
+    bool setManualMode(bool manualMode);
 
     /// @brief Gets the manual temperature
-    int getManualTemperature() { return _manualTemperature; };
+    int8_t getManualTemperature() { return _manualTemperature; };
 
     /// @brief Sets if the manual temperature
     /// @param manualTemperature manual temperature
-    void setManualTemperature(int manualTemperature);
+    /// @return the new value after limit check
+    int8_t setManualTemperature(int8_t manualTemperature);
 
     /// @brief Gets the temperature areas
     /// @param index area index
@@ -65,9 +80,9 @@ private:
     TemperatureConfig *_config;
     Preferences *_preferences;
     bool _enabled;
-    int _start;
-    int _end;
-    int _offset;
+    int8_t _start;
+    int8_t _end;
+    int8_t _offset;
 
 protected:
 public:
@@ -77,7 +92,7 @@ public:
     /// @brief Creates a new instance of an TemperatureArea
     /// @param index unique area index
     /// @param config the parent configuration
-    /// @param preferences the app preferences to stroe the configuration
+    /// @param preferences the app preferences to store the configuration
     TemperatureArea(size_t index, TemperatureConfig *config, Preferences *preferences);
 
     /// @brief Gets if the area is responsable for the given temperature
@@ -93,28 +108,140 @@ public:
 
     /// @brief Enables/disables the area
     /// @param enabled defines if the area is enabled
-    void setEnabled(bool enabled);
+    /// @return the new value after limit check
+    bool setEnabled(bool enabled);
 
     /// @brief Gets the start temperature of the area
-    int getStart() { return _start; };
+    int8_t getStart() { return _start; };
 
     /// @brief Sets the start temperature of the area
     /// @param start defines the start temperature of the area
-    void setStart(int start);
+    /// @return the new value after limit check
+    int8_t setStart(int8_t start);
 
     /// @brief Gets the end temperature of the area
-    int getEnd() { return _end; };
+    int8_t getEnd() { return _end; };
 
     /// @brief Sets the start temperature of the area
     /// @param end defines the end temperature of the area
-    void setEnd(int end);
+    /// @return the new value after limit check
+    int8_t setEnd(int8_t end);
 
     /// @brief Gets the temperature offset of the area
-    int getOffset() { return _offset; };
+    int8_t getOffset() { return _offset; };
 
     /// @brief Sets the temperature offset of the area
     /// @param end defines the temperature offset of the area
-    void setOffset(int offset);
+    /// @return the new value after limit check
+    int8_t setOffset(int8_t offset);
+};
+
+/// @brief Holds the power configuration
+class PowerConfig
+{
+private:
+    PowerArea *_areas[POWER_AREA_AMOUNT];
+    Preferences *_preferences;
+    bool _manualMode;
+    uint8_t _manualPower;
+
+protected:
+public:
+    /// @brief Creates a new instance of an PowerConfig
+    /// @param preferences the app preferences to stroe the configuration
+    PowerConfig(Preferences *preferences);
+
+    /// @brief Gets if the manual mode is active
+    bool isManualMode() { return _manualMode; };
+
+    /// @brief Sets if the manual mode is active
+    /// @param manualMode manual mode enabled/disabled
+    /// @return the new value after limit check
+    bool setManualMode(bool manualMode);
+
+    /// @brief Gets the manual power [%]
+    uint8_t getManualPower() { return _manualPower; };
+
+    /// @brief Sets if the manual power [%]
+    /// @param manualPower manual power [%]
+    /// @return the new value after limit check
+    uint8_t setManualPower(uint8_t manualPower);
+
+    /// @brief Gets the power areas
+    /// @param index area index
+    PowerArea *getArea(size_t index) { return _areas[index]; };
+
+    /// @brief Gets the area that is responsable for the given temperature
+    /// @param temperature the temperature
+    /// @return the responsable area or nullptr if none could be found
+    PowerArea *getArea(float temperature);
+
+    /// @brief Get the output power limit based on the input and configuration
+    /// @param inputTemp the temperature that is used to search for the correct area
+    /// @return the power limit in %
+    uint8_t getOutputPowerLimit(float inputTemp);
+};
+
+/// @brief Holds the power area configuration
+class PowerArea
+{
+private:
+    PowerConfig *_config;
+    Preferences *_preferences;
+    bool _enabled;
+    int8_t _start;
+    int8_t _end;
+    uint8_t _powerLimit;
+
+protected:
+public:
+    const size_t index;
+    const String name;
+
+    /// @brief Creates a new instance of an PowerArea
+    /// @param index unique area index
+    /// @param config the parent configuration
+    /// @param preferences the app preferences to store the configuration
+    PowerArea(size_t index, PowerConfig *config, Preferences *preferences);
+
+    /// @brief Gets if the area is responsable for the given temperature
+    /// @param temperature the temperature
+    /// @return if is responsable
+    bool isResponsable(float temperature);
+
+    /// @brief Gets if the area is enabled
+    bool isEnabled() { return _enabled; };
+
+    /// @brief Gets if the area configuiration is valid
+    bool isValid();
+
+    /// @brief Enables/disables the area
+    /// @param enabled defines if the area is enabled
+    /// @return the new value after limit check
+    bool setEnabled(bool enabled);
+
+    /// @brief Gets the start temperature of the area
+    int8_t getStart() { return _start; };
+
+    /// @brief Sets the start temperature of the area
+    /// @param start defines the start temperature of the area
+    /// @return the new value after limit check
+    int8_t setStart(int8_t start);
+
+    /// @brief Gets the end temperature of the area
+    int8_t getEnd() { return _end; };
+
+    /// @brief Sets the start temperature of the area
+    /// @param end defines the end temperature of the area
+    /// @return the new value after limit check
+    int8_t setEnd(int8_t end);
+
+    /// @brief Gets the powerlimit of the area
+    uint8_t getPowerLimit() { return _powerLimit; }
+
+    /// @brief Sets the powerlimit of the area
+    /// @return the new value after limit check
+    uint8_t setPowerLimit(uint8_t powerLimit);
 };
 
 /// @brief Holds the remanent settings
@@ -122,9 +249,11 @@ class Config
 {
 private:
     Preferences *_preferences;
+
 protected:
 public:
     TemperatureConfig *temperatureConfig;
+    PowerConfig *powerConfig;
 
     /// @brief Creates the configuration instance
     Config();

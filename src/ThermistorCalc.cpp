@@ -8,13 +8,6 @@ double _coefficientA;
 double _coefficientB;
 double _coefficientC;
 
-/// @brief Creates an instance of the calculator
-/// @param cLow Low reference temperature in Celsius
-/// @param rLow Low reference resistance on Ohm
-/// @param cMid Mid reference temperature in Celsius
-/// @param rMid  Mid reference resistance on Ohm
-/// @param cHigh High reference temperature in Celsius
-/// @param rHigh High reference resistance on Ohm
 ThermistorCalc::ThermistorCalc(int cLow, int rLow, int cMid, int rMid, int cHigh, int rHigh)
 {
     double lnR1 = log(rLow);
@@ -37,9 +30,6 @@ ThermistorCalc::ThermistorCalc(int cLow, int rLow, int cMid, int rMid, int cHigh
     _coefficientA = 1 / k1 - _coefficientC * lnR1Pow3 - _coefficientB * lnR1;
 }
 
-/// @brief Calculates the resistance [Ohm] of the given temperature [kelvin]
-/// @param kelvin Temperature [kelvin]
-/// @return The calculated resistane [Ohm]
 const double ThermistorCalc::resistanceFromKelvin(double kelvin)
 {
     double alpha = (_coefficientA - (1 / kelvin)) / _coefficientC;
@@ -47,42 +37,27 @@ const double ThermistorCalc::resistanceFromKelvin(double kelvin)
     return exp(pow(beta - (alpha / 2), ONE_THIRD) - pow(beta + (alpha / 2), ONE_THIRD));
 }
 
-/// @brief Calculates the resistance [Ohm] of the given temperature [celsius]
-/// @param celsius Temperature in [celsius]
-/// @return The calculated resistane [Ohm]
 const double ThermistorCalc::resistanceFromCelsius(double celsius)
 {
     return resistanceFromKelvin(celsiusToKelvin(celsius));
 }
 
-/// @brief Calculates the temperature [kelvin] by the given resistance [Ohm]
-/// @param resistance The resistance [Ohm]
-/// @return The calculated temperature [kelvin]
 const double ThermistorCalc::kelvinFromResistance(double resistance)
 {
     double lnR = log(resistance);
     return 1 / (_coefficientA + _coefficientB * lnR + _coefficientC * pow(lnR, 3));
 }
 
-/// @brief Calculates the temperature [celsius] by the given resistance [Ohm]
-/// @param resistance The resistance [Ohm]
-/// @return The temperature [celsius]
 const double ThermistorCalc::celsiusFromResistance(double resistance)
 {
     return kelvinToCelsius(kelvinFromResistance(resistance));
 }
 
-/// @brief Converts the temperature [celsius] into temperature [kelvin]
-/// @param celsius The temperature in [celsius]
-/// @return The temperature in [kelvin]
 const double ThermistorCalc::celsiusToKelvin(double celsius)
 {
     return celsius + OFFSET_KELVIN;
 }
 
-/// @brief Converts the temperature [kelvin] into temperature [celsius]
-/// @param kelvin The temperature in [kelvin]
-/// @return The temperature in [celsius]
 const double ThermistorCalc::kelvinToCelsius(double kelvin)
 {
     return kelvin - OFFSET_KELVIN;

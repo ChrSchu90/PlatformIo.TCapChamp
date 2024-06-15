@@ -215,8 +215,8 @@ void setupWeatherApi()
 #ifdef LOG_DEBUG
 	LOG_DEBUG(F("Main"), F("setupWeatherApi"), F("Started"));
 #endif
-
-	if (WEATHER_API_KEY.length() < 30)
+	auto apiKey = String(WEATHER_API_KEY);
+	if (apiKey.length() < 30)
 	{
 #ifdef LOG_ERROR
 		LOG_ERROR(F("Main"), F("setupWeatherApi"), F("API key missing or invalid, weather API can't be used!"));
@@ -229,14 +229,14 @@ void setupWeatherApi()
 #ifdef LOG_INFO
 		LOG_INFO(F("Main"), F("setupWeatherApi"), F("Using City ID ") + WEATHER_CITY_ID);
 #endif
-		_weatherApi = new OpenWeatherMap(WEATHER_API_KEY, WEATHER_CITY_ID);
+		_weatherApi = new OpenWeatherMap(apiKey, WEATHER_CITY_ID);
 	}
 	else if (abs(WEATHER_LATITUDE) > 0 && abs(WEATHER_LONGITUDE) > 0)
 	{
 #ifdef LOG_INFO
 		LOG_INFO(F("Main"), F("setupWeatherApi"), F("Using Latitude ") + WEATHER_LATITUDE + F(" and Longitude ") + WEATHER_LONGITUDE);
 #endif
-		_weatherApi = new OpenWeatherMap(WEATHER_API_KEY, WEATHER_LATITUDE, WEATHER_LONGITUDE);
+		_weatherApi = new OpenWeatherMap(apiKey, WEATHER_LATITUDE, WEATHER_LONGITUDE);
 	}
 	else
 	{
@@ -436,7 +436,7 @@ void setupWifiManager()
 
 	// automatically connect using saved credentials if they exist
 	// If connection fails it starts an access point with the specified name
-	bool connected = _wifiManager.autoConnect("", WIFI_CONFIG_PASSWORD.c_str());
+	bool connected = _wifiManager.autoConnect("", WIFI_CONFIG_PASSWORD);
 	if (!connected)
 	{
 		if (!configurued)
@@ -444,8 +444,8 @@ void setupWifiManager()
 #ifdef LOG_WARNING
 			LOG_WARNING(F("Main"), F("setupWifiManager"), F("Config portal failed, reboot!"));
 #endif
-			ESP.restart();
-			delay(10000);
+			//ESP.restart();
+			//delay(10000);
 		}
 		else
 		{

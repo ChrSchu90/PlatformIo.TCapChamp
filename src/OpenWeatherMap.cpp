@@ -5,25 +5,16 @@
 #include "OpenWeatherMap.h"
 #include "SerialLogging.h"
 
-/// @brief Creates an instance of the OpenWeatherMap API
-/// @param apiKey Your API key
-/// @param cityId The city ID can be taken from https://openweathermap.org/ by search from URL (https://openweathermap.org/city/xxxxxxx)
-OpenWeatherMap::OpenWeatherMap(String apiKey, unsigned int cityId) : apiUrl(String(F("https://api.openweathermap.org/data/2.5/weather?")) + F("id=") + String(cityId) + F("&lang=en&units=METRIC&appid=") + apiKey)
+OpenWeatherMap::OpenWeatherMap(String apiKey, unsigned int cityId) : apiUrl(String("https://api.openweathermap.org/data/2.5/weather?id=") + cityId + "&lang=en&units=METRIC&appid=" + apiKey)
 {
     _temperature = NAN;
 }
 
-/// @brief Creates an instance of the OpenWeatherMap API
-/// @param apiKey Your API key
-/// @param latitude Location latitude (can be taken from google maps with right-click)
-/// @param longitude Location longitude (can be taken from google maps with right-click)
-OpenWeatherMap::OpenWeatherMap(String apiKey, double latitude, double longitude) : apiUrl(String(F("https://api.openweathermap.org/data/2.5/weather?lat=")) + String(latitude, 6) + F("&lon=") + String(longitude, 6) + F("&lang=en&units=METRIC&appid=") + apiKey)
+OpenWeatherMap::OpenWeatherMap(String apiKey, double latitude, double longitude) : apiUrl(String("https://api.openweathermap.org/data/2.5/weather?lat=") + String(latitude, 6) + "&lon=" + String(longitude, 6) + "&lang=en&units=METRIC&appid=" + apiKey)
 {
     _temperature = NAN;
 }
 
-/// @brief Sends a API request (may take a while and will block)
-/// @return the API response
 ApiResponse OpenWeatherMap::request()
 {
     if (WiFi.status() != WL_CONNECTED)
@@ -64,7 +55,7 @@ ApiResponse OpenWeatherMap::request()
         return ApiResponse(DeserializationFailed, httpCode);
     }
 
-    _temperature = doc[F("main")][F("temp")];
+    _temperature = doc["main"]["temp"];
 #ifdef LOG_ERROR
     LOG_ERROR(F("OpenWeatherMap"), F("request"), F("_temperature = ") + _temperature);
 #endif
