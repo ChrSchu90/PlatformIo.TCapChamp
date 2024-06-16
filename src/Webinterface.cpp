@@ -17,7 +17,7 @@
 
 Webinterface::Webinterface(uint16_t port, Config *config, WiFiManager *wifiManager)
 {
-#ifdef DEBUG_ESPUI
+#ifdef LOG_DEBUG
     ESPUI.setVerbosity(Verbosity::Verbose);
 #endif
     // Create global labels
@@ -40,7 +40,7 @@ Webinterface::Webinterface(uint16_t port, Config *config, WiFiManager *wifiManag
     ESPUI.begin("T-Cap Champ", nullptr, nullptr, port);
 
     // NOTE: Control is added inside SystemTab! The callback needs to be added after the webserver has been started.
-    ESPUI.WebServer()->on(
+    ESPUI.server->on(
         "/ota",
         HTTP_POST,
         [](AsyncWebServerRequest *request)
