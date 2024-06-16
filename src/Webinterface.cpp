@@ -13,6 +13,8 @@
 ##############################################
 */
 
+//const char *OTA_INDEX PROGMEM = R"=====(<!DOCTYPE html><html><head><meta charset=utf-8><title>OTA</title></head><body><div class="upload"><form method="POST" action="/ota" enctype="multipart/form-data"><input type="file" name="data" /><input type="submit" name="upload" value="Upload" title="Upload Files"></form></div></body></html>)=====";
+
 Webinterface::Webinterface(uint16_t port, Config *config, WiFiManager *wifiManager)
 {
 #ifdef DEBUG_ESPUI
@@ -36,6 +38,49 @@ Webinterface::Webinterface(uint16_t port, Config *config, WiFiManager *wifiManag
     // ESPUI.jsonInitialDocumentSize = 12000;
     // ESPUI.jsonUpdateDocumentSize = 4000;
     ESPUI.begin("T-Cap Champ", nullptr, nullptr, port);
+
+    // NOTE: Control is added inside SystemTab! The callback needs to be added after the webserver has been started.
+    ESPUI.WebServer()->on(
+        "/ota",
+        HTTP_POST,
+        [](AsyncWebServerRequest *request)
+        {
+            request->send(200);
+        },
+        [](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
+        {
+            if (!index)
+            {
+                Serial.printf("UploadStart: %s\n", filename.c_str());
+
+                // calculate sketch space required for the update, for ESP32 use the max constant
+                if (!Update.begin(UPDATE_SIZE_UNKNOWN))
+                {
+                    // start with max available size
+                    Update.printError(Serial);
+                }
+            }
+
+            if (len)
+            {
+                Update.write(data, len);
+            }
+
+            // if the final flag is set then this is the last frame of data
+            if (final)
+            {
+                if (Update.end(true))
+                {
+                    // true to set the size to the current progress
+                    Serial.printf("Update Success: %ub written\nRebooting...\n", index + len);
+                    ESP.restart();
+                }
+                else
+                {
+                    Update.printError(Serial);
+                }
+            }
+        });
 };
 
 void Webinterface::setSensorTemp(const float temperature)
@@ -55,14 +100,14 @@ void Webinterface::setOutputTemp(const float temperature)
 
 void Webinterface::setOuputPowerLimit(const float powerLimit)
 {
-    if(powerLimit < 10)
+    if (powerLimit < 10)
     {
         ESPUI.updateLabel(_lblOutputPower, "Not Active");
     }
     else
     {
         ESPUI.updateLabel(_lblOutputPower, String(powerLimit, 0) + " \%");
-    }    
+    }
 }
 
 /*
@@ -104,6 +149,9 @@ SystemInfoTab::SystemInfoTab()
     auto lblSoftware = ESPUI.addControl(Label, "Software", "Arduiono Verison: " + String(VER_ARDUINO_STR), None, _tab);
     ESPUI.addControl(Label, "SDK", "SDK Verison: " + String(ESP.getSdkVersion()), None, lblSoftware);
     ESPUI.addControl(Label, "Build", "Build: " + String(__DATE__ " " __TIME__), None, lblSoftware);
+    
+    auto lblOTA = ESPUI.addControl(ControlType::Label, "OTA Update", "<form method=""POST"" action=""/ota"" enctype=""multipart/form-data""><input type=""file"" name=""data"" /><input type=""submit"" name=""upload"" value=""Upload"" title=""Upload Files""></form>", None, _tab);
+    ESPUI.setElementStyle(ESPUI.addControl(Label, NO_VALUE, NO_VALUE, None, lblOTA), "background-color: unset; width: 100%;");
 
     _btnReboot = ESPUI.addControl(
         ControlType::Button, "Reboot", "Press " + String(_rebootCnt) + " times", Carrot, _tab,
@@ -185,10 +233,10 @@ TemperatureAreaTab::TemperatureAreaTab(TemperatureTab *tab, TemperatureArea *con
             ESPUI.updateSlider(sender->id, instance->_config->setStart(sender->value.toInt()));
             instance->updateStatus();
         },
-        this);        
+        this);
     ESPUI.addControl(Min, NO_VALUE, MIN_TEMPERATURE_VALUE, None, _sldStart);
     ESPUI.addControl(Max, NO_VALUE, MAX_TEMPERATURE_VALUE, None, _sldStart);
-    //ESPUI.addControl(Step, NO_VALUE, "1", None, _sldStart);
+    // ESPUI.addControl(Step, NO_VALUE, "1", None, _sldStart);
 
     ESPUI.setElementStyle(ESPUI.addControl(Label, NO_VALUE, "End °C", None, _swEnabled), "background-color: unset; width: 100%;");
     _sldEnd = ESPUI.addControl(
@@ -202,7 +250,7 @@ TemperatureAreaTab::TemperatureAreaTab(TemperatureTab *tab, TemperatureArea *con
         this);
     ESPUI.addControl(Min, NO_VALUE, MIN_TEMPERATURE_VALUE, None, _sldEnd);
     ESPUI.addControl(Max, NO_VALUE, MAX_TEMPERATURE_VALUE, None, _sldEnd);
-    //ESPUI.addControl(Step, NO_VALUE, "1", None, _sldEnd);
+    // ESPUI.addControl(Step, NO_VALUE, "1", None, _sldEnd);
 
     ESPUI.setElementStyle(ESPUI.addControl(Label, NO_VALUE, "Offset °C", None, _swEnabled), "background-color: unset; width: 100%;");
     _sldOffset = ESPUI.addControl(
@@ -215,7 +263,7 @@ TemperatureAreaTab::TemperatureAreaTab(TemperatureTab *tab, TemperatureArea *con
         this);
     ESPUI.addControl(Min, NO_VALUE, MIN_TEMPERATURE_VALUE, None, _sldOffset);
     ESPUI.addControl(Max, NO_VALUE, MAX_TEMPERATURE_VALUE, None, _sldOffset);
-    //ESPUI.addControl(Step, NO_VALUE, "1", None, _sldOffset);
+    // ESPUI.addControl(Step, NO_VALUE, "1", None, _sldOffset);
 
     updateStatus();
 }
@@ -275,7 +323,7 @@ TemperatureTab::TemperatureTab(TemperatureConfig *config) : _config(config)
         this);
     ESPUI.addControl(Min, NO_VALUE, MIN_TEMPERATURE_VALUE, None, _sldManualTemp);
     ESPUI.addControl(Max, NO_VALUE, MAX_TEMPERATURE_VALUE, None, _sldManualTemp);
-    //ESPUI.addControl(Step, NO_VALUE, "1", None, _sldManualTemp);
+    // ESPUI.addControl(Step, NO_VALUE, "1", None, _sldManualTemp);
 
     ////
     //// TEST START

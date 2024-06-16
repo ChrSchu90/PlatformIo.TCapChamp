@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - '**'
+    tags:
+      - 'v*'
     paths-ignore:
       - '*.md'
   pull_request:
@@ -33,3 +35,16 @@ jobs:
       run: pip install --upgrade platformio
     - name: Build PlatformIO Project
       run: pio run
+    - name: Get Version from Tag
+      if: startsWith(github.event.ref, 'refs/tags/v')
+      id: tagver
+      uses: ChrSchu90/GitTagSemanticVersion@v1.1
+    - name: Create Release
+      if: ${{ steps.tagver.outcome == 'success' && steps.tagver.outputs.is_valid == 'true' }}
+      uses: softprops/action-gh-release@v2
+      with:
+        fail_on_unmatched_files: true
+        tag_name: ${{ steps.tagver.outputs.version_tag }}
+        prerelease: ${{ steps.tagver.outputs.is_prerelease == 'true' }}  
+        files: |
+          .pio/build/nodemcu-32s/firmware.bin
