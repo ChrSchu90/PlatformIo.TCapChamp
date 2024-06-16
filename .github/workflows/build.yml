@@ -50,4 +50,4 @@ jobs:
         tag_name: ${{ steps.tagver.outputs.version_tag }}
         prerelease: ${{ steps.tagver.outputs.is_prerelease == 'true' }}  
         files: |
-          .pio/build/nodemcu-32s/firmware.bin
+          ./.pio/build/nodemcu-32s/firmware.bin
