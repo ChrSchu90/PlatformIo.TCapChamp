@@ -53,9 +53,16 @@ void Webinterface::setOutputTemp(const float temperature)
     ESPUI.updateLabel(_lblOutputTemp, String(temperature) + " °C");
 }
 
-void Webinterface::setOuputPowerLimit(const uint8_t powerLimit)
+void Webinterface::setOuputPowerLimit(const float powerLimit)
 {
-    ESPUI.updateLabel(_lblOutputPower, String(powerLimit) + " \%");
+    if(powerLimit < 10)
+    {
+        ESPUI.updateLabel(_lblOutputPower, "Not Active");
+    }
+    else
+    {
+        ESPUI.updateLabel(_lblOutputPower, String(powerLimit, 0) + " \%");
+    }    
 }
 
 /*
@@ -67,7 +74,7 @@ void Webinterface::setOuputPowerLimit(const uint8_t powerLimit)
 SystemInfoTab::SystemInfoTab()
 {
     _tab = ESPUI.addControl(
-        Tab, "System", "System", None, None,
+        Tab, NO_VALUE, "System", None, None,
         [](Control *sender, int type, void *UserInfo)
         {
             // Update on open tab
@@ -247,7 +254,7 @@ void TemperatureAreaTab::updateStatus()
 
 TemperatureTab::TemperatureTab(TemperatureConfig *config) : _config(config)
 {
-    _tab = ESPUI.addControl(Tab, "Temperature", "Temperature");
+    _tab = ESPUI.addControl(Tab, NO_VALUE, "Temperature");
     _swManualMode = ESPUI.addControl(
         Switcher, "Manual Temperature", String(config->isManualMode() ? 1 : 0), None, _tab,
         [](Control *sender, int type, void *UserInfo)
@@ -424,7 +431,7 @@ void PowerAreaTab::updateStatus()
 
 PowerTab::PowerTab(PowerConfig *config) : _config(config)
 {
-    _tab = ESPUI.addControl(Tab, "Power Limit", "Power");
+    _tab = ESPUI.addControl(Tab, NO_VALUE, "Power Limit");
     _swManualMode = ESPUI.addControl(
         Switcher, "Manual Power Limit", String(config->isManualMode() ? 1 : 0), None, _tab,
         [](Control *sender, int type, void *UserInfo)
@@ -519,7 +526,7 @@ void PowerTab::updateStatus()
 WifiInfoTab::WifiInfoTab(WiFiManager *wifiManager) : _wifiManager(wifiManager)
 {
     _tab = ESPUI.addControl(
-        Tab, "WiFi", "WiFi", None, None,
+        Tab, NO_VALUE, "WiFi", None, None,
         [](Control *sender, int type, void *UserInfo)
         {
             // Update on open tab

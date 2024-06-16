@@ -203,6 +203,6 @@ public:
     void setOutputTemp(const float temperature);
 
     /// @brief Updates the output power limit inside webinterface
-    /// @param powerLimit the new power limit
-    void setOuputPowerLimit(const uint8_t powerLimit);
+    /// @param powerLimit the new power limit [%]
+    void setOuputPowerLimit(const float powerLimit);
 };

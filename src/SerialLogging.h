@@ -1,10 +1,10 @@
 #pragma once
 
-#define ERROR 4
-#define WARNING 3
-#define INFO 2
-#define DEBUG 1
-#define NONE 0
+#define ERROR 4     // Error log level
+#define WARNING 3   // Warning log level
+#define INFO 2      // Info log level
+#define DEBUG 1     // Debug log level
+#define NONE 0      // Logging disabled
 
 #ifndef LOG_LEVEL
     #define LOG_LEVEL NONE

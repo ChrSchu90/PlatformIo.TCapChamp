@@ -1,6 +1,5 @@
 #define LOG_LEVEL NONE
 
-#include <math.h>
 #include "Config.h"
 #include "SerialLogging.h"
 
@@ -225,16 +224,16 @@ uint8_t PowerConfig::getOutputPowerLimit(float inputTemp)
 
     if (isnanf(inputTemp))
     {
-        return MAX_POWER_LIMIT;
+        return MIN_POWER_LIMIT;
     }
 
     auto area = getArea(inputTemp);
     if (area != nullptr)
     {
-        return inputTemp + area->getPowerLimit();
+        return area->getPowerLimit();
     }
 
-    return MAX_POWER_LIMIT;
+    return MIN_POWER_LIMIT;
 }
 
 PowerArea *PowerConfig::getArea(float temperature)
@@ -267,7 +266,7 @@ PowerArea::PowerArea(size_t index, PowerConfig *config, Preferences *preferences
     _enabled = preferences->getBool(KEY_SETTING_POWER_AREA_ENABLED + index, false);
     _start = preferences->getChar(KEY_SETTING_POWER_AREA_START + index, 0);
     _end = preferences->getChar(KEY_SETTING_POWER_AREA_END + index, 0);
-    _powerLimit = preferences->getUChar(KEY_SETTING_POWER_AREA_LIMIT + index, 100);
+    _powerLimit = preferences->getUChar(KEY_SETTING_POWER_AREA_LIMIT + index, MAX_POWER_LIMIT);
 };
 
 bool PowerArea::setEnabled(bool enabled)

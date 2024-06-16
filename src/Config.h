@@ -3,7 +3,7 @@
 #include <Preferences.h>
 
 static const size_t TEMP_AREA_AMOUNT = 6;           // Amount of temperature areas
-static const size_t POWER_AREA_AMOUNT = 2;          // Amount of power areas
+static const size_t POWER_AREA_AMOUNT = 4;          // Amount of power areas
 
 #define MIN_TEMPERATURE -20                         // Minimum supported temperature
 #define MAX_TEMPERATURE 30                          // Maximum supported temperature

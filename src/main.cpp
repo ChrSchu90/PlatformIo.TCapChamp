@@ -14,14 +14,14 @@
 #include "Secrets.h"
 #include "SerialLogging.h"
 
-Timer<5, millis> _timers;	 // Timer collection for time based operations
+Timer<6, millis> _timers;	 // Timer collection for time based operations
 WiFiManager _wifiManager;	 // Access to the WiFi manager TODO: replace by integrated configuration and reconnect logic
 Config *_config;			 // Access to the configuration
 Webinterface *_webinterface; // Access to the webinterface
 
 #pragma region Input_Temperature_Sensor
 
-static const uint8_t GPIO_THERMISTOR_IN = GPIO_NUM_36;												// GPIO used for real input temperature from thermistor
+static const uint8_t GPIO_THERMISTOR_IN = GPIO_NUM_36;										// GPIO used for real input temperature from thermistor
 static const float SUPPLY_VOLTAGE = 3.3;													// Maximum Voltage ADC input
 static const unsigned int TEMP_IN_DEVIDER_RESISTANCE = 10000;								// Voltage divider resistor value for input temperature in Ohm
 static const unsigned int TEMP_IN_SAMPLE_CYCLE = 10;										// Sample rate to build the median in milliseconds
@@ -258,6 +258,39 @@ void setupWeatherApi()
 
 #pragma endregion Weather_API
 
+/// @brief Gets the real input temperature that is used to calculate the power limit and output temperature
+/// @attention Priority: 1st Nanual Temperature, 2nd Weather API, 3rd fallback to Nanual Temperature and NAN if it is not possible to determine a input temperature
+/// @return The input temperature or NAN if it is not possible to determine one
+float getInputTemperature()
+{
+	// Use manual temperature as highest priority
+	if(_config && _config->temperatureConfig->isManualMode())
+	{
+		return _config->temperatureConfig->getManualTemperature();
+	}
+
+	// Prefer weather API
+	if(!isnanf(_weatherApiTemperature))
+	{
+		return _weatherApiTemperature;
+	}
+
+	// Use input sensor as fallback
+	if(!isnanf(_thermistorInTemperature))
+	{
+		return _thermistorInTemperature;
+	}
+
+	// Use the manual temperature as fallback if no API or input sensor value is available
+	if(_config)
+	{
+		return _config->temperatureConfig->getManualTemperature();
+	}
+
+	// It is not possible to determine a input temperature 
+	return NAN;
+}
+
 #pragma region Output_Temperature_Sensor
 
 static const uint8_t SPI_BUS_THERMISTOR_OUT = VSPI;				// SPI bus used for digital potentiometer for output temperature
@@ -271,11 +304,11 @@ ThermistorCalc _thermistorOut(-40, 167820, 25, 6523, 120, 302); // Output that s
 SPIClass *_spiDigitalPoti;										// Digital potentiometer SPI interface
 float _outputTemperature = NAN;									// Last output temperature (NAN if no temperature could be calculated)
 
-/// @brief Updates the _outputTemperature based on the input sensor, weather API or manual temperature
+/// @brief Updates the _outputTemperature based on getInputTemperature()
 /// @return If the value has changed
 bool updateOutputTemperature()
 {
-	float inputTemperature = !isnanf(_thermistorInTemperature) ? _thermistorInTemperature : _weatherApiTemperature;
+	float inputTemperature = getInputTemperature();
 	float targetTemp = _config->temperatureConfig->getOutputTemperature(inputTemperature);
 
 	bool changed = false;
@@ -340,7 +373,37 @@ void setupOutputTemperature()
 
 #pragma region Output_Power_Limit
 
+static const unsigned int POWER_OUT_UPDATE_CYCLE = 1000;			// Update time of the output temperature in milliseconds
 DFRobot_GP8403 *_i2cDac;
+uint8_t _powerLimitPercent = 0;
+
+/// @brief Sets the powerlimit via DAC 0-10V, updates the _powerLimitPercent and webinterface
+/// @attention T-Cap need at least a 10% power limit, less is detected as disabled demand control 
+/// @param percent The new power limit in %
+/// @param force Force sending the given value to the DAC
+/// @return true if the limit has been changed, otherwise false
+bool setPowerLimit(uint8_t percent, bool force = false)
+{
+	percent = min(max(percent, (uint8_t)MIN_POWER_LIMIT), (uint8_t)MAX_POWER_LIMIT);
+	if (!_i2cDac || (!force && percent == _powerLimitPercent))
+	{
+		return false;
+	}
+
+	_i2cDac->setDACOutVoltage(percent * 100, 0); // percent to mV on CH0
+	// delay(1000); // wait before store, due to exceptions
+	// dac.store(); // save value?
+	_powerLimitPercent = percent;
+#ifdef LOG_DEBUG
+	LOG_DEBUG(F("Main"), F("setPowerLimit"), F("Set power limit to ") + String(_powerLimitPercent) + "%");
+#endif
+	if (_webinterface)
+	{
+		_webinterface->setOuputPowerLimit(_powerLimitPercent);
+	}
+
+	return true;
+}
 
 /// @brief Setup of the power limiter via 0-10V analog output
 void setupPowerLimit()
@@ -349,7 +412,7 @@ void setupPowerLimit()
 	LOG_DEBUG(F("Main"), F("setupPowerLimit"), F("Started"));
 #endif
 
-	DFRobot_GP8403 *dac = new DFRobot_GP8403(&Wire, 0x5F);
+	auto dac = new DFRobot_GP8403(&Wire, 0x5F);
 	if (dac->begin() != 0)
 	{
 #ifdef LOG_ERROR
@@ -360,12 +423,23 @@ void setupPowerLimit()
 	{
 		_i2cDac = dac;
 		_i2cDac->setDACOutRange(dac->eOutputRange10V);
-		_i2cDac->setDACOutVoltage(0000, 0); // mV / Channel
 #ifdef LOG_DEBUG
 		LOG_DEBUG(F("Main"), F("setupPowerLimit"), F("Successful init 0-10V output via I2C"));
 #endif
-		// delay(1000); // wait before store, due to exceptions
-		// dac.store();
+		setPowerLimit(_powerLimitPercent, true); // initially set to 0% ()
+		_timers.every(
+		POWER_OUT_UPDATE_CYCLE,
+		[](void *opaque) -> bool
+		{
+			auto inputTemperature = getInputTemperature();
+			auto powerLimit = _config->powerConfig->getOutputPowerLimit(inputTemperature);
+			if (setPowerLimit(powerLimit) && _webinterface)
+			{
+				_webinterface->setOuputPowerLimit(_powerLimitPercent);
+			}
+
+			return true;
+		});
 	}
 }
 
@@ -410,6 +484,14 @@ void setupWebinterface()
 	_webinterface->setSensorTemp(_thermistorInTemperature);
 	_webinterface->setWeatherTemp(_weatherApiTemperature);
 	_webinterface->setOutputTemp(_outputTemperature);
+	if (_i2cDac)
+	{
+		_webinterface->setOuputPowerLimit(_powerLimitPercent);
+	}
+	else
+	{
+		_webinterface->setOuputPowerLimit(NAN);
+	}
 
 #ifdef LOG_DEBUG
 	LOG_DEBUG(F("Main"), F("setupWebinterface"), F("Completed"));
@@ -444,8 +526,8 @@ void setupWifiManager()
 #ifdef LOG_WARNING
 			LOG_WARNING(F("Main"), F("setupWifiManager"), F("Config portal failed, reboot!"));
 #endif
-			//ESP.restart();
-			//delay(10000);
+			// ESP.restart();
+			// delay(10000);
 		}
 		else
 		{
@@ -476,6 +558,7 @@ void setup()
 	Serial.begin(115200);
 
 #ifdef LOG_DEBUG
+	delay(3000);
 	LOG_DEBUG(F("Main"), F("setup"), F("Started"));
 #endif
 
