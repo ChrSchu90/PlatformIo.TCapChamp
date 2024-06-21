@@ -1,6 +1,5 @@
 #pragma once
 
-#include <WiFiManager.h>
 #include "Config.h"
 
 static const char * NO_VALUE = "";                                      // Empty string for no value
@@ -146,7 +145,6 @@ class WifiInfoTab
 {
 private:
     static const int RESET_CLICK_CNT = 5;
-    WiFiManager *_wifiManager;
     uint16_t _tab;
     uint16_t _btnReset;
     uint16_t _lblConfiguration;
@@ -162,7 +160,7 @@ private:
 protected:
 public:
     /// @brief Creates an instance of the TabWifiInfo
-    WifiInfoTab(WiFiManager *wifiManager);
+    WifiInfoTab();
 
     /// @brief Update the WiFi information
     void update();
@@ -188,7 +186,7 @@ public:
     /// @param port the webinterface port
     /// @param config the configuration
     /// @param wifiManager the WiFi manager
-    Webinterface(const uint16_t port, Config *config, WiFiManager *wifiManager);
+    Webinterface(const uint16_t port, Config *config);
 
     /// @brief Updates the sensor temperature inside webinterface
     /// @param temperature the new temperature

@@ -2,8 +2,10 @@
 // #define DEBUG_ESPUI 1
 
 #include <Arduino.h>
-#include <WiFiManager.h>
+//#include <WiFiManager.h>
 #include <ESPUI.h>
+#include <Update.h>
+#include <esp_arduino_version.h>
 #include "Webinterface.h"
 #include "SerialLogging.h"
 
@@ -15,7 +17,7 @@
 
 //const char *OTA_INDEX PROGMEM = R"=====(<!DOCTYPE html><html><head><meta charset=utf-8><title>OTA</title></head><body><div class="upload"><form method="POST" action="/ota" enctype="multipart/form-data"><input type="file" name="data" /><input type="submit" name="upload" value="Upload" title="Upload Files"></form></div></body></html>)=====";
 
-Webinterface::Webinterface(uint16_t port, Config *config, WiFiManager *wifiManager)
+Webinterface::Webinterface(uint16_t port, Config *config)
 {
 #ifdef LOG_DEBUG
     ESPUI.setVerbosity(Verbosity::Verbose);
@@ -30,7 +32,7 @@ Webinterface::Webinterface(uint16_t port, Config *config, WiFiManager *wifiManag
     temperatureTab = new TemperatureTab(config->temperatureConfig);
     powerTab = new PowerTab(config->powerConfig);
     systemInfoTab = new SystemInfoTab();
-    wifiInfoTab = new WifiInfoTab(wifiManager);
+    wifiInfoTab = new WifiInfoTab();
 
     // Start ESP UI https://github.com/s00500/ESPUI
     // ESPUI.prepareFileSystem();  //Copy across current version of ESPUI resources
@@ -146,7 +148,7 @@ SystemInfoTab::SystemInfoTab()
     ESPUI.addControl(Label, "Cores", "Cores: " + String(ESP.getChipCores()), ControlColor::None, lblDevice);
     ESPUI.addControl(Label, "Revision", "Revision: " + String(ESP.getChipRevision()), ControlColor::None, lblDevice);
 
-    auto lblSoftware = ESPUI.addControl(Label, "Software", "Arduiono Verison: " + String(VER_ARDUINO_STR), ControlColor::None, _tab);
+    auto lblSoftware = ESPUI.addControl(Label, "Software", "Arduiono Verison: " + String(ESP_ARDUINO_VERSION_MAJOR) +  "."  + String(ESP_ARDUINO_VERSION_MINOR) +  "."  + String(ESP_ARDUINO_VERSION_PATCH), ControlColor::None, _tab);
     ESPUI.addControl(Label, "SDK", "SDK Verison: " + String(ESP.getSdkVersion()), ControlColor::None, lblSoftware);
     ESPUI.addControl(Label, "Build", "Build: " + String(__DATE__ " " __TIME__), ControlColor::None, lblSoftware);
     
@@ -571,7 +573,7 @@ void PowerTab::updateStatus()
 ##############################################
 */
 
-WifiInfoTab::WifiInfoTab(WiFiManager *wifiManager) : _wifiManager(wifiManager)
+WifiInfoTab::WifiInfoTab()
 {
     _tab = ESPUI.addControl(
         Tab, NO_VALUE, "WiFi", ControlColor::None, Control::noParent,
@@ -594,26 +596,26 @@ WifiInfoTab::WifiInfoTab(WiFiManager *wifiManager) : _wifiManager(wifiManager)
     _lblSsid = ESPUI.addControl(Label, "SSID", NO_VALUE, ControlColor::None, _lblConfiguration);
     _lblRssi = ESPUI.addControl(Label, "RSSI", NO_VALUE, ControlColor::None, _lblConfiguration);
 
-    _btnReset = ESPUI.addControl(
-        ControlType::Button, "Reset", "Press " + String(_resetCnt) + " times", Carrot, _tab,
-        [](Control *sender, int type, void *UserInfo)
-        {
-            if (type != B_DOWN)
-            {
-                return;
-            }
-
-            WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
-            instance->_resetCnt--;
-            if (instance->_resetCnt < 1)
-            {
-                instance->_wifiManager->resetSettings();
-                ESP.restart();
-            }
-
-            ESPUI.updateButton(sender->id, "Press " + String(instance->_resetCnt) + " times");
-        },
-        this);
+    //_btnReset = ESPUI.addControl(
+    //    ControlType::Button, "Reset", "Press " + String(_resetCnt) + " times", Carrot, _tab,
+    //    [](Control *sender, int type, void *UserInfo)
+    //    {
+    //        if (type != B_DOWN)
+    //        {
+    //            return;
+    //        }
+    //
+    //        WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
+    //        instance->_resetCnt--;
+    //        if (instance->_resetCnt < 1)
+    //        {
+    //            instance->_wifiManager->resetSettings();
+    //            ESP.restart();
+    //        }
+    //
+    //        ESPUI.updateButton(sender->id, "Press " + String(instance->_resetCnt) + " times");
+    //    },
+    //    this);
 
     update();
 }

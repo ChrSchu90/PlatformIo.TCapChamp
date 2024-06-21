@@ -1,12 +1,12 @@
 #define LOG_LEVEL NONE
 
 #include <Arduino.h>
-#include <WiFiManager.h>
 #include <arduino-timer.h>
 #include <RunningMedian.h>
 #include <SPI.h>
 #include <Wire.h>
 #include <DFRobot_GP8403.h>
+#include "WiFiModeChamp.h"
 #include "OpenWeatherMap.h"
 #include "ThermistorCalc.h"
 #include "Config.h"
@@ -15,7 +15,6 @@
 #include "SerialLogging.h"
 
 Timer<6, millis> _timers;	 // Timer collection for time based operations
-WiFiManager _wifiManager;	 // Access to the WiFi manager TODO: replace by integrated configuration and reconnect logic
 Config *_config;			 // Access to the configuration
 Webinterface *_webinterface; // Access to the webinterface
 
@@ -264,30 +263,30 @@ void setupWeatherApi()
 float getInputTemperature()
 {
 	// Use manual temperature as highest priority
-	if(_config && _config->temperatureConfig->isManualMode())
+	if (_config && _config->temperatureConfig->isManualMode())
 	{
 		return _config->temperatureConfig->getManualTemperature();
 	}
 
 	// Prefer weather API
-	if(!isnanf(_weatherApiTemperature))
+	if (!isnanf(_weatherApiTemperature))
 	{
 		return _weatherApiTemperature;
 	}
 
 	// Use input sensor as fallback
-	if(!isnanf(_thermistorInTemperature))
+	if (!isnanf(_thermistorInTemperature))
 	{
 		return _thermistorInTemperature;
 	}
 
 	// Use the manual temperature as fallback if no API or input sensor value is available
-	if(_config)
+	if (_config)
 	{
 		return _config->temperatureConfig->getManualTemperature();
 	}
 
-	// It is not possible to determine a input temperature 
+	// It is not possible to determine a input temperature
 	return NAN;
 }
 
@@ -373,12 +372,12 @@ void setupOutputTemperature()
 
 #pragma region Output_Power_Limit
 
-static const unsigned int POWER_OUT_UPDATE_CYCLE = 1000;			// Update time of the output temperature in milliseconds
+static const unsigned int POWER_OUT_UPDATE_CYCLE = 1000; // Update time of the output temperature in milliseconds
 DFRobot_GP8403 *_i2cDac;
 uint8_t _powerLimitPercent = 0;
 
 /// @brief Sets the powerlimit via DAC 0-10V, updates the _powerLimitPercent and webinterface
-/// @attention T-Cap need at least a 10% power limit, less is detected as disabled demand control 
+/// @attention T-Cap need at least a 10% power limit, less is detected as disabled demand control
 /// @param percent The new power limit in %
 /// @param force Force sending the given value to the DAC
 /// @return true if the limit has been changed, otherwise false
@@ -428,18 +427,18 @@ void setupPowerLimit()
 #endif
 		setPowerLimit(_powerLimitPercent, true); // initially set to 0% ()
 		_timers.every(
-		POWER_OUT_UPDATE_CYCLE,
-		[](void *opaque) -> bool
-		{
-			auto inputTemperature = getInputTemperature();
-			auto powerLimit = _config->powerConfig->getOutputPowerLimit(inputTemperature);
-			if (setPowerLimit(powerLimit) && _webinterface)
+			POWER_OUT_UPDATE_CYCLE,
+			[](void *opaque) -> bool
 			{
-				_webinterface->setOuputPowerLimit(_powerLimitPercent);
-			}
+				auto inputTemperature = getInputTemperature();
+				auto powerLimit = _config->powerConfig->getOutputPowerLimit(inputTemperature);
+				if (setPowerLimit(powerLimit) && _webinterface)
+				{
+					_webinterface->setOuputPowerLimit(_powerLimitPercent);
+				}
 
-			return true;
-		});
+				return true;
+			});
 	}
 }
 
@@ -449,11 +448,7 @@ void setupPowerLimit()
 void loop()
 {
 	_timers.tick();
-
-	// if(_wifiManager.getWiFiIsSaved())
-	//{
-	_wifiManager.process();
-	//}
+	WifiModeChamp.loop();
 }
 
 /// @brief Setup for the configuration for loading and storing none volatile data
@@ -478,7 +473,7 @@ void setupWebinterface()
 #endif
 
 	// Creaate webinterface
-	_webinterface = new Webinterface(8080, _config, &_wifiManager);
+	_webinterface = new Webinterface(80, _config);
 
 	// Set initial values
 	_webinterface->setSensorTemp(_thermistorInTemperature);
@@ -503,53 +498,20 @@ void setupWifiManager()
 {
 #ifdef LOG_DEBUG
 	LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Started"));
+	WifiModeChamp.listen(
+		[](__unused WifiModeChampState previous, WifiModeChampState state)
+		{
+			LOG_DEBUG(F("Main"), F("WifiModeChamp.listen"), F("State changed from ") + WifiModeChamp.getStateName(previous) + F(" to ") + WifiModeChamp.getStateName(state));
+		});
 #endif
 
-	// explicitly set mode, esp defaults to STA+AP
-	WiFi.mode(WIFI_STA);
-
-	// Start config portal only if there is no WiFi configuration
-	// And enable portal blocking for configuration
-	bool configurued = _wifiManager.getWiFiIsSaved();
-	//_wifiManager.setEnableConfigPortal(!configurued);
-	_wifiManager.setConfigPortalBlocking(false);
-	_wifiManager.setConfigPortalTimeout(86400); // 24h timeout
-	//_wifiManager.setHttpPort(8080);
-
-	// automatically connect using saved credentials if they exist
-	// If connection fails it starts an access point with the specified name
-	bool connected = _wifiManager.autoConnect("", WIFI_CONFIG_PASSWORD);
-	if (!connected)
-	{
-		if (!configurued)
-		{
-#ifdef LOG_WARNING
-			LOG_WARNING(F("Main"), F("setupWifiManager"), F("Config portal failed, reboot!"));
-#endif
-			// ESP.restart();
-			// delay(10000);
-		}
-		else
-		{
-#ifdef LOG_WARNING
-			LOG_WARNING(F("Main"), F("setupWifiManager"), F("WiFi is configured, but connecting to saved WiFi failed"));
-#endif
-		}
-	}
-	else
-	{
-		if (!configurued)
-		{
-#ifdef LOG_INFO
-			LOG_INFO(F("Main"), F("setupWifiManager"), F("Start reboot after WiFi configuration"));
-#endif
-			ESP.restart();
-			delay(10000);
-		}
+	// TODO: Setup WiFiModeChamp
+	WifiModeChamp.setReconnectTimeout(20);
+    WifiModeChamp.setConnectTimeout(10);
+	WifiModeChamp.begin("T-Cap Champ", WIFI_CONFIG_PASSWORD);
 #ifdef LOG_DEBUG
-		LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Successfuly connected to WiFi"));
+	LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Successfuly connected to WiFi"));
 #endif
-	}
 }
 
 /// @brief Put your setup code here, to run once:
