@@ -165,7 +165,7 @@ void WifiModeChampClass::begin(char const *apSSID, char const *apPassword, char 
     LOG_DEBUG(F("WiFiModeChamp"), F("begin"), F("Starting in non-blocking mode..."));
 #endif
 
-    if (_wifiSsid.isEmpty() || _wifiPassword.isEmpty() || _wifiPassword.length() < 8)
+    if (_wifiSsid.isEmpty())
     {
 #ifdef LOG_DEBUG
         LOG_DEBUG(F("WiFiModeChamp"), F("begin"), F("Loading WiFi settings from config since nothing is configured..."));
@@ -214,11 +214,11 @@ void WifiModeChampClass::begin(char const *apSSID, char const *apPassword, char 
     _state = WifiModeChampState::NETWORK_ENABLED;
 }
 
-void WifiModeChampClass::setWifiCredentials(const String ssid, const String password, bool save)
+bool WifiModeChampClass::setWifiCredentials(const String ssid, const String password, bool save)
 {
     if (_wifiSsid == ssid && _wifiPassword == password)
     {
-        return;
+        return false;
     }
 
     _wifiSsid = ssid;
@@ -228,6 +228,7 @@ void WifiModeChampClass::setWifiCredentials(const String ssid, const String pass
 #ifdef LOG_ERROR
         LOG_ERROR(F("WiFiModeChamp"), F("setWifiCredentials"), F("Password is invalid!"));
 #endif
+        return false;
     }
 
     if (save && !_wifiSsid.isEmpty() && (_wifiPassword.isEmpty() || _wifiPassword.length() > 7))
@@ -247,6 +248,8 @@ void WifiModeChampClass::setWifiCredentials(const String ssid, const String pass
         WiFi.disconnect(true, true);
         _setState(WifiModeChampState::NETWORK_TIMEOUT);
     }
+
+    return true;
 }
 
 void WifiModeChampClass::end()
@@ -266,6 +269,9 @@ void WifiModeChampClass::end()
 
 void WifiModeChampClass::loop()
 {
+    if (_state == WifiModeChampState::NETWORK_DISABLED)
+        return;
+
     if (_dnsServer != nullptr)
     {
         _dnsServer->processNextRequest();
@@ -307,7 +313,6 @@ void WifiModeChampClass::loop()
     // Switch to AP mode if reconnect timeouts
     if (_state == WifiModeChampState::NETWORK_RECONNECTING && reconnectTimeoutElapsed())
     {
-        // TODO: Switch to AP mode after timeout
         WiFi.disconnect(true, true);
         _setState(WifiModeChampState::NETWORK_TIMEOUT);
     }
@@ -324,6 +329,7 @@ void WifiModeChampClass::loop()
                 {
                     _stopAP();
                     _setState(WifiModeChampState::NETWORK_ENABLED);
+                    clearWifiScanResult();
                     break;
                 }
             }
@@ -333,11 +339,10 @@ void WifiModeChampClass::loop()
 
 void WifiModeChampClass::clearConfiguration()
 {
-    // TODO: Save data?
-    // Preferences preferences;
-    // preferences.begin("espconnect", false); // ToDo rename
-    // preferences.clear();
-    // preferences.end();
+    Preferences preferences;
+    preferences.begin(KEY_WIFI_SETTINGS_NAMESPACE, false);
+    preferences.clear();
+    preferences.end();
 }
 
 void WifiModeChampClass::_setState(WifiModeChampState state)
@@ -353,9 +358,9 @@ void WifiModeChampClass::_setState(WifiModeChampState state)
     LOG_DEBUG(F("WiFiModeChamp"), F("_setState"), F("Change state from ") + getStateName(previous) + F(" to ") + getStateName(state));
 #endif
 
-    if (_callback != nullptr)
+    if (_stateCallback != nullptr)
     {
-        _callback(previous, state);
+        _stateCallback(previous, state);
     }
 }
 
@@ -395,7 +400,8 @@ void WifiModeChampClass::_startAP()
     WiFi.persistent(false);
     WiFi.setAutoReconnect(false);
     WiFi.softAPConfig(IPAddress(192, 168, 4, 1), IPAddress(192, 168, 4, 1), IPAddress(255, 255, 255, 0));
-    WiFi.mode(WIFI_AP_STA);
+    // WiFi.mode(WIFI_AP_STA);
+    WiFi.mode(WIFI_AP);
 
     if (_apPassword.isEmpty() || _apPassword.length() < 8)
     {
@@ -460,7 +466,6 @@ void WifiModeChampClass::_onWiFiEvent(WiFiEvent_t event)
             LOG_DEBUG(F("WiFiModeChamp"), F("_onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_STA_GOT_IP (State = ") + getStateName() + ")");
 #endif
             _lastTime = -1;
-            // MDNS.begin(_hostname.c_str()); // TODO: needed?!?
             _setState(WifiModeChampState::NETWORK_CONNECTED);
         }
         break;
@@ -486,8 +491,8 @@ void WifiModeChampClass::_onWiFiEvent(WiFiEvent_t event)
         break;
 
     case ARDUINO_EVENT_WIFI_AP_START:
+        // WiFi.setHostname(_hostname.c_str());
         WiFi.softAPsetHostname(_hostname.c_str());
-// MDNS.begin(_hostname.c_str()); // TODO: needed?!?
 #ifdef LOG_DEBUG
         LOG_DEBUG(F("WiFiModeChamp"), F("_onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_AP_START (State = ") + getStateName() + ")");
 #endif
@@ -503,6 +508,29 @@ void WifiModeChampClass::_onWiFiEvent(WiFiEvent_t event)
     }
 }
 
+void WifiModeChampClass::clearWifiScanResult()
+{
+#ifdef LOG_DEBUG
+    LOG_DEBUG(F("WiFiModeChamp"), F("clearWifiScanResult"), F("Cleaning up WiFi scan results"));
+#endif
+    WiFi.scanDelete();
+    //_lastScanStarted = -1;  // TODO: needed???
+    //_lastScanCompleted = -1;  // TODO: needed???
+}
+
+void WifiModeChampClass::startWifiScan()
+{
+#ifdef LOG_DEBUG
+    LOG_DEBUG(F("WiFiModeChamp"), F("startWifiScan"), F("Starting scan..."));
+#endif
+    WiFi.scanDelete();
+    WiFi.setScanMethod(WIFI_ALL_CHANNEL_SCAN);
+    WiFi.setSortMethod(WIFI_CONNECT_AP_BY_SIGNAL);
+    WiFi.scanNetworks(true);
+    _lastScanCompleted = -1;
+    _lastScanStarted = millis();
+}
+
 int16_t WifiModeChampClass::scanWifiNetworks(bool ignoreWaitTime)
 {
     auto scanCnt = WiFi.scanComplete();
@@ -511,30 +539,57 @@ int16_t WifiModeChampClass::scanWifiNetworks(bool ignoreWaitTime)
         return 0;
     }
 
-    if (ignoreWaitTime || scanCnt == WIFI_SCAN_FAILED || _lastScanTime < 1 || millis() - _lastScanTime >= _waitBetweenWifiScans * 1000)
+    if (scanCnt > 0 && _lastScanStarted > 0)
     {
 #ifdef LOG_DEBUG
-        LOG_DEBUG(F("WiFiModeChamp"), F("scanWifiNetworks"), F("Starting scan... (scanCnt = ") + scanCnt + ")");
+        LOG_DEBUG(F("WiFiModeChamp"), F("scanWifiNetworks"), F("Scan completed with ") + scanCnt + " available networks");
 #endif
-        WiFi.scanDelete();
-        WiFi.setScanMethod(WIFI_ALL_CHANNEL_SCAN);
-        WiFi.setSortMethod(WIFI_CONNECT_AP_BY_SIGNAL);
-        WiFi.scanNetworks(true);
-        _lastScanTime = millis();
-        return false;
+        _lastScanCompleted = millis();
+        _lastScanStarted = -1;
+        if (_scanCallback != nullptr)
+        {
+            _scanCallback(scanCnt);
+        }
+
+        return scanCnt;
     }
 
-    if (scanCnt < 1)
+    if (ignoreWaitTime)
     {
+#ifdef LOG_DEBUG
+        LOG_DEBUG(F("WiFiModeChamp"), F("scanWifiNetworks"), F("Starting forced WiFi scan..."));
+#endif
+        startWifiScan();
         return 0;
     }
 
-#ifdef LOG_DEBUG
-    LOG_DEBUG(F("WiFiModeChamp"), F("scanWifiNetworks"), F("Scan completed (scanCnt = ") + scanCnt + ")");
-#endif
+    if (scanCnt == WIFI_SCAN_FAILED)
+    {
+        // Scan is cleared or has failed
+        startWifiScan();
+        return 0;
+    }
 
-    _lastScanTime = -1;
-    return scanCnt;
+    auto currentMillis = millis();
+    if (_lastScanStarted > 0 && currentMillis - _lastScanStarted >= _timeoutWifiScan * 1000)
+    {
+#ifdef LOG_DEBUG
+        LOG_DEBUG(F("WiFiModeChamp"), F("scanWifiNetworks"), F("WiFi scan timed out"));
+#endif
+        startWifiScan();
+        return 0;
+    }
+
+    if (_lastScanCompleted > 0 && currentMillis - _lastScanCompleted >= _waitBetweenWifiScans * 1000)
+    {
+#ifdef LOG_DEBUG
+        LOG_DEBUG(F("WiFiModeChamp"), F("scanWifiNetworks"), F("Starting WiFi scan after wating time..."));
+#endif
+        startWifiScan();
+        return 0;
+    }
+
+    return 0;
 }
 
 bool WifiModeChampClass::_durationPassed(uint32_t intervalSec)

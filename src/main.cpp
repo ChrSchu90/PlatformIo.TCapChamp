@@ -505,7 +505,6 @@ void setupWifiManager()
 		});
 #endif
 
-	// TODO: Setup WiFiModeChamp
 	WifiModeChamp.setReconnectTimeout(20);
     WifiModeChamp.setConnectTimeout(10);
 	WifiModeChamp.begin("T-Cap Champ", WIFI_CONFIG_PASSWORD);

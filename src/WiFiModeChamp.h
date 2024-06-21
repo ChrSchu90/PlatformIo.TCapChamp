@@ -44,21 +44,24 @@ enum class WifiModeChampMode
 
 typedef std::function<void(WifiModeChampState previous, WifiModeChampState state)> WifiModeChampStateCallback;
 
+typedef std::function<bool(int16_t networkCnt)> WifiModeChampWifiScanCallback;
+
 class WifiModeChampClass
 {
 public:
     ~WifiModeChampClass() { end(); }
 
     /// @brief 
-    /// @param apSSID Optional SSID for the AP mode, falls back to ESP_[SerialNumber]
+    /// @param apSSID Optional SSID for the AP mode, falls back to ESP-[SerialNumber]
     /// @param apPassword Optional password for the AP mode, if not defined accassable woithout password
-    /// @param hostname Optional hostname, falls back to ESP_[SerialNumber]
+    /// @param hostname Optional hostname, falls back to ESP-[SerialNumber]
     void begin(char const *apSSID = "", char const *apPassword = "", char const *hostname = "");
 
     /// @brief Sets the WiFi credentials for the STA connection, connect to the WiFi and optionally saves the new credentials
     /// @param ssid the SSID for the STA connection
     /// @param password the password for the STA connection (must be at least 8 characters long)
-    void setWifiCredentials(const String ssid, const String password, bool save = false);
+    /// @returns if the credentials could be updated
+    bool setWifiCredentials(const String ssid, const String password, bool save = false);
 
     // loop() method to be called from main loop()
     void loop();
@@ -67,7 +70,9 @@ public:
     void end();
 
     // Listen for network state change
-    void listen(WifiModeChampStateCallback callback) { _callback = callback; }
+    void listen(WifiModeChampStateCallback callback) { _stateCallback = callback; }
+
+    void scanCallback(WifiModeChampWifiScanCallback callback) { _scanCallback = callback; }
 
     // Returns the current network state
     WifiModeChampState getState() const { return _state; }
@@ -99,6 +104,10 @@ public:
     /// @brief Gets the signal quality (percentage from 0 to 100) of the current WiFi, or -1 if not available
     int8_t getWiFiSignalQuality() const;
 
+    /// @brief Scan avaialbe WiFi networks, use the scanCallback to receive the scan result
+    void scanWifiNetworks() { scanWifiNetworks(false); }
+
+
     /// @brief Gets the hostname passed from begin()
     const String &getHostname() const { return _hostname; }
 
@@ -126,13 +135,18 @@ public:
     uint32_t getWifiScanWaitTime() const { return _waitBetweenWifiScans; }
     /// @brief Wait time between WiFi scans, is also used to reconnect to the configured SSID if connection got loss and reconnect timeouts
     void setWifiScanWaitTime(uint32_t waitTime) { _waitBetweenWifiScans = std::max(waitTime, (uint32_t)5); }
+    /// @brief Timeout for WiFi scans
+    uint32_t getWifiScanTimeout() const { return _timeoutWifiScan; }
+    /// @brief Timeout for WiFi scans
+    void setWifiScanTimeout(uint32_t waitTime) { _timeoutWifiScan = std::max(waitTime, (uint32_t)5); }
 
     /// @brief when using auto-load and save of configuration, this method can clear saved states.
     void clearConfiguration();
 
 private:
     WifiModeChampState _state = WifiModeChampState::NETWORK_DISABLED;
-    WifiModeChampStateCallback _callback = nullptr;
+    WifiModeChampStateCallback _stateCallback = nullptr;
+    WifiModeChampWifiScanCallback _scanCallback = nullptr;
     DNSServer *_dnsServer = nullptr;
     int64_t _lastTime = -1;
     String _hostname = "";
@@ -143,8 +157,10 @@ private:
     uint32_t _connectTimeout = 20;
     uint32_t _reconnectTimeout = 180;
     int64_t _lastReconnectTime = -1;
-    uint32_t _waitBetweenWifiScans = 20;
-    int64_t _lastScanTime = 0;
+    uint32_t _waitBetweenWifiScans = 10;
+    uint32_t _timeoutWifiScan = 10;
+    int64_t _lastScanCompleted = -1;
+    int64_t _lastScanStarted = -1;
     WiFiEventId_t _wifiEventListenerId = 0;
 
 private:
@@ -161,6 +177,8 @@ private:
     /// @brief Scan available WiFi networks
     /// @return the amount of WiFi networks that has been found
     int16_t scanWifiNetworks(bool ignoreWaitTime);
+    void clearWifiScanResult();
+    void startWifiScan();
 
 private:
     static int8_t _wifiSignalQuality(int32_t rssi);
