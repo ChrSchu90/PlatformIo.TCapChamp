@@ -4,6 +4,7 @@
 #include <Arduino.h>
 //#include <WiFiManager.h>
 #include <ESPUI.h>
+#include <dataIndexHTML.h>
 #include <Update.h>
 #include <esp_arduino_version.h>
 #include "Webinterface.h"
@@ -39,7 +40,19 @@ Webinterface::Webinterface(uint16_t port, Config *config)
     // ESPUI.list(); //List all files on LittleFS, for info
     // ESPUI.jsonInitialDocumentSize = 12000;
     // ESPUI.jsonUpdateDocumentSize = 4000;
+    ESPUI.captivePortal = true;
     ESPUI.begin("T-Cap Champ", nullptr, nullptr, port);
+
+    // WiFi captive portal for iOS
+    ESPUI.server->on(
+        "/hotspot-detect.html",
+        HTTP_GET,
+        [](AsyncWebServerRequest *request)
+        {
+            AsyncWebServerResponse* response = request->beginResponse_P(200, "text/html", HTML_INDEX);
+            request->send(response);
+        }
+    );
 
     // NOTE: Control is added inside SystemTab! The callback needs to be added after the webserver has been started.
     ESPUI.server->on(
@@ -575,17 +588,7 @@ void PowerTab::updateStatus()
 
 WifiInfoTab::WifiInfoTab()
 {
-    _tab = ESPUI.addControl(
-        Tab, NO_VALUE, "WiFi", ControlColor::None, Control::noParent,
-        [](Control *sender, int type, void *UserInfo)
-        {
-            // Update on open tab
-            WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
-            instance->update();
-            instance->_resetCnt = RESET_CLICK_CNT;
-            ESPUI.updateButton(instance->_btnReset, "Press " + String(instance->_resetCnt) + " times");
-        },
-        this);
+    _tab = ESPUI.addControl(Tab, NO_VALUE, "WiFi", ControlColor::None, Control::noParent);
 
     _lblConfiguration = ESPUI.addControl(Label, "Configuration", "Hostname: " + String(WiFi.getHostname()), ControlColor::None, _tab);
     _lblMac = ESPUI.addControl(Label, "MAC", NO_VALUE, ControlColor::None, _lblConfiguration);
