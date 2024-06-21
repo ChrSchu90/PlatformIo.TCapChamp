@@ -505,8 +505,9 @@ void setupWifiManager()
 		});
 #endif
 
-	WifiModeChamp.setReconnectTimeout(20);
-    WifiModeChamp.setConnectTimeout(10);
+	WifiModeChamp.setReconnectTimeout(120);
+    WifiModeChamp.setConnectTimeout(30);
+    WifiModeChamp.setWifiScanWaitTime(20);
 	WifiModeChamp.begin("T-Cap Champ", WIFI_CONFIG_PASSWORD);
 #ifdef LOG_DEBUG
 	LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Successfuly connected to WiFi"));

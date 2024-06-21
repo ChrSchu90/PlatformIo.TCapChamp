@@ -44,12 +44,14 @@ enum class WifiModeChampMode
 
 typedef std::function<void(WifiModeChampState previous, WifiModeChampState state)> WifiModeChampStateCallback;
 
-typedef std::function<bool(int16_t networkCnt)> WifiModeChampWifiScanCallback;
+typedef std::function<void(int16_t networkCnt)> WifiModeChampWifiScanCallback;
 
 class WifiModeChampClass
 {
 public:
     ~WifiModeChampClass() { end(); }
+
+    static int8_t wifiSignalQuality(int32_t rssi);
 
     /// @brief 
     /// @param apSSID Optional SSID for the AP mode, falls back to ESP-[SerialNumber]
@@ -105,7 +107,9 @@ public:
     int8_t getWiFiSignalQuality() const;
 
     /// @brief Scan avaialbe WiFi networks, use the scanCallback to receive the scan result
-    void scanWifiNetworks() { scanWifiNetworks(false); }
+    void scanWifiNetworks() { _scanRequested = true; }
+    /// @brief Gets if there is a WiFi scan pending
+    bool getWifiScanPending() { return _scanRequested == true; }
 
 
     /// @brief Gets the hostname passed from begin()
@@ -121,23 +125,23 @@ public:
     /// @brief Password for the WiFi to connect to, loaded from config or set from begin()
     const String &getConfiguredWiFiPassword() const { return _wifiPassword; }
 
-    /// @brief Maximum duration that the a reconnect will be pending before switching to AP mode
+    /// @brief Maximum duration in seconds that the a reconnect will be pending before switching to AP mode
     uint32_t getReconnectTimeout() const { return _reconnectTimeout; }
-    /// @brief Maximum duration that the a reconnect will be pending before switching to AP mode
+    /// @brief Maximum duration in seconds that the a reconnect will be pending before switching to AP mode
     void setReconnectTimeout(uint32_t timeout) { _reconnectTimeout = std::max(timeout, (uint32_t)10); }
 
-    // Maximum duration that the ESP will try to connect to the WiFi before giving up and start the AP mode
+    // Maximum duration in seconds that the ESP will try to connect to the WiFi before giving up and start the AP mode
     uint32_t getConnectTimeout() const { return _connectTimeout; }
-    /// @brief Maximum duration that the ESP will try to connect to the WiFi before giving up and start the AP mode
+    /// @brief Maximum in seconds duration that the ESP will try to connect to the WiFi before giving up and start the AP mode
     void setConnectTimeout(uint32_t timeout) { _connectTimeout = std::max(timeout, (uint32_t)5); }
 
-    /// @brief Wait time between WiFi scans, is also used to reconnect to the configured SSID if connection got loss and reconnect timeouts
+    /// @brief Wait time in seconds between WiFi scans, is also used to reconnect to the configured SSID if connection got loss and reconnect timeouts
     uint32_t getWifiScanWaitTime() const { return _waitBetweenWifiScans; }
-    /// @brief Wait time between WiFi scans, is also used to reconnect to the configured SSID if connection got loss and reconnect timeouts
+    /// @brief Wait time in seconds between WiFi scans, is also used to reconnect to the configured SSID if connection got loss and reconnect timeouts
     void setWifiScanWaitTime(uint32_t waitTime) { _waitBetweenWifiScans = std::max(waitTime, (uint32_t)5); }
-    /// @brief Timeout for WiFi scans
+    /// @brief Timeout in seconds for WiFi scans
     uint32_t getWifiScanTimeout() const { return _timeoutWifiScan; }
-    /// @brief Timeout for WiFi scans
+    /// @brief Timeout in seconds for WiFi scans
     void setWifiScanTimeout(uint32_t waitTime) { _timeoutWifiScan = std::max(waitTime, (uint32_t)5); }
 
     /// @brief when using auto-load and save of configuration, this method can clear saved states.
@@ -157,10 +161,11 @@ private:
     uint32_t _connectTimeout = 20;
     uint32_t _reconnectTimeout = 180;
     int64_t _lastReconnectTime = -1;
-    uint32_t _waitBetweenWifiScans = 10;
+    uint32_t _waitBetweenWifiScans = 20;
     uint32_t _timeoutWifiScan = 10;
     int64_t _lastScanCompleted = -1;
     int64_t _lastScanStarted = -1;
+    bool _scanRequested = false;
     WiFiEventId_t _wifiEventListenerId = 0;
 
 private:
@@ -178,10 +183,7 @@ private:
     /// @return the amount of WiFi networks that has been found
     int16_t scanWifiNetworks(bool ignoreWaitTime);
     void clearWifiScanResult();
-    void startWifiScan();
-
-private:
-    static int8_t _wifiSignalQuality(int32_t rssi);
+    void startWifiScan();    
 };
 
 extern WifiModeChampClass WifiModeChamp;

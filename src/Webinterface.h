@@ -140,12 +140,21 @@ public:
     void updateStatus();
 };
 
+/// @brief Holds a available WiFi option
+struct WiFiOption 
+{
+    String Label = emptyString;
+    String Value = emptyString;
+    uint16_t Control = 0;
+};
+
 /// @brief Implements a WiFi information tab inside the Webinterface
 class WifiInfoTab
 {
 private:
+    static const int16_t AmountOptions = 8;
     uint16_t _tab;
-    uint16_t _lblConfiguration;
+    uint16_t _lblInfo;
     uint16_t _lblMac;
     uint16_t _lblIp;
     uint16_t _lblDns;
@@ -153,6 +162,15 @@ private:
     uint16_t _lblSubnet;
     uint16_t _lblSsid;
     uint16_t _lblRssi;
+    uint16_t _selSsid;
+    uint16_t _txtSsid;
+    uint16_t _txtPassword;
+    uint16_t _btnSave;
+    uint16_t _btnScan;
+    WiFiOption _wifiOptions[AmountOptions];
+
+    void updateBtnSaveState();
+    void wifiScanCompleted(int16_t networkCnt);
     
 protected:
 public:

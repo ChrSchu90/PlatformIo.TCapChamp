@@ -140,13 +140,14 @@ int8_t WifiModeChampClass::getWiFiRSSI() const
 
 int8_t WifiModeChampClass::getWiFiSignalQuality() const
 {
-    return WiFi.getMode() == WIFI_MODE_STA ? _wifiSignalQuality(WiFi.RSSI()) : 0;
+    return WiFi.getMode() == WIFI_MODE_STA ? wifiSignalQuality(WiFi.RSSI()) : 0;
 }
 
-int8_t WifiModeChampClass::_wifiSignalQuality(int32_t rssi)
+int8_t WifiModeChampClass::wifiSignalQuality(int32_t rssi)
 {
-    int32_t s = map(rssi, -90, -30, 0, 100);
-    return s > 100 ? 100 : (s < 0 ? 0 : s);
+    return min(max(2 * (rssi + 100), 0), 100);
+    //int32_t s = map(rssi, -90, -30, 0, 100);
+    //return s > 100 ? 100 : (s < 0 ? 0 : s);
 }
 
 const String WifiModeChampClass::getDefaultHostName()
@@ -271,6 +272,18 @@ void WifiModeChampClass::loop()
 {
     if (_state == WifiModeChampState::NETWORK_DISABLED)
         return;
+
+    // handle WiFi scan request
+    if (_scanRequested && _scanCallback != nullptr)
+    {
+        auto networkCnt = scanWifiNetworks(false);
+        if (networkCnt > 0)
+        {
+            _scanCallback(networkCnt);
+            clearWifiScanResult();
+            _scanRequested = false;
+        }
+    }
 
     if (_dnsServer != nullptr)
     {
@@ -546,11 +559,6 @@ int16_t WifiModeChampClass::scanWifiNetworks(bool ignoreWaitTime)
 #endif
         _lastScanCompleted = millis();
         _lastScanStarted = -1;
-        if (_scanCallback != nullptr)
-        {
-            _scanCallback(scanCnt);
-        }
-
         return scanCnt;
     }
 

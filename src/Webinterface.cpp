@@ -2,12 +2,12 @@
 // #define DEBUG_ESPUI 1
 
 #include <Arduino.h>
-//#include <WiFiManager.h>
 #include <ESPUI.h>
 #include <dataIndexHTML.h>
 #include <Update.h>
 #include <esp_arduino_version.h>
 #include "Webinterface.h"
+#include "WiFiModeChamp.h"
 #include "SerialLogging.h"
 
 /*
@@ -16,7 +16,7 @@
 ##############################################
 */
 
-//const char *OTA_INDEX PROGMEM = R"=====(<!DOCTYPE html><html><head><meta charset=utf-8><title>OTA</title></head><body><div class="upload"><form method="POST" action="/ota" enctype="multipart/form-data"><input type="file" name="data" /><input type="submit" name="upload" value="Upload" title="Upload Files"></form></div></body></html>)=====";
+// const char *OTA_INDEX PROGMEM = R"=====(<!DOCTYPE html><html><head><meta charset=utf-8><title>OTA</title></head><body><div class="upload"><form method="POST" action="/ota" enctype="multipart/form-data"><input type="file" name="data" /><input type="submit" name="upload" value="Upload" title="Upload Files"></form></div></body></html>)=====";
 
 Webinterface::Webinterface(uint16_t port, Config *config)
 {
@@ -24,10 +24,10 @@ Webinterface::Webinterface(uint16_t port, Config *config)
     ESPUI.setVerbosity(Verbosity::Verbose);
 #endif
     // Create global labels
-    _lblSensorTemp = ESPUI.addControl(Label, "Sensor", String(NAN) + " °C", None);
-    _lblWeatherTemp = ESPUI.addControl(Label, "Weather API", String(NAN) + " °C", None);
-    _lblOutputTemp = ESPUI.addControl(Label, "Output Temperature", String(NAN) + " °C", None);
-    _lblOutputPower = ESPUI.addControl(Label, "Output Power Limit", String(NAN) + " \%", None);
+    _lblSensorTemp = ESPUI.addControl(ControlType::Label, "Sensor", String(NAN) + " °C", None);
+    _lblWeatherTemp = ESPUI.addControl(ControlType::Label, "Weather API", String(NAN) + " °C", None);
+    _lblOutputTemp = ESPUI.addControl(ControlType::Label, "Output Temperature", String(NAN) + " °C", None);
+    _lblOutputPower = ESPUI.addControl(ControlType::Label, "Output Power Limit", String(NAN) + " \%", None);
 
     // Create tabs
     temperatureTab = new TemperatureTab(config->temperatureConfig);
@@ -49,10 +49,9 @@ Webinterface::Webinterface(uint16_t port, Config *config)
         HTTP_GET,
         [](AsyncWebServerRequest *request)
         {
-            AsyncWebServerResponse* response = request->beginResponse_P(200, "text/html", HTML_INDEX);
+            AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", HTML_INDEX);
             request->send(response);
-        }
-    );
+        });
 
     // NOTE: Control is added inside SystemTab! The callback needs to be added after the webserver has been started.
     ESPUI.server->on(
@@ -134,7 +133,7 @@ void Webinterface::setOuputPowerLimit(const float powerLimit)
 SystemInfoTab::SystemInfoTab()
 {
     _tab = ESPUI.addControl(
-        Tab, NO_VALUE, "System", ControlColor::None, Control::noParent,
+        ControlType::Tab, NO_VALUE, "System", ControlColor::None, Control::noParent,
         [](Control *sender, int type, void *UserInfo)
         {
             // Update on open tab
@@ -149,24 +148,24 @@ SystemInfoTab::SystemInfoTab()
     _flashSize = ESP.getFlashChipSize();
     _sketchSize = ESP.getFreeSketchSpace() + ESP.getSketchSize();
 
-    _lblUptime = ESPUI.addControl(Label, "Performance", NO_VALUE, ControlColor::None, _tab);
-    _lblHeapUsage = ESPUI.addControl(Label, "Heap Usage", NO_VALUE, ControlColor::None, _lblUptime);
-    _lblHeapAllocatedMax = ESPUI.addControl(Label, "Heap Allocated Max", NO_VALUE, ControlColor::None, _lblUptime);
-    _lblSketch = ESPUI.addControl(Label, "Sketch Used", NO_VALUE, ControlColor::None, _lblUptime);
-    _lblTemperature = ESPUI.addControl(Label, "Temperature", NO_VALUE, ControlColor::None, _lblUptime);
+    _lblUptime = ESPUI.addControl(ControlType::Label, "Performance", NO_VALUE, ControlColor::None, _tab);
+    _lblHeapUsage = ESPUI.addControl(ControlType::Label, "Heap Usage", NO_VALUE, ControlColor::None, _lblUptime);
+    _lblHeapAllocatedMax = ESPUI.addControl(ControlType::Label, "Heap Allocated Max", NO_VALUE, ControlColor::None, _lblUptime);
+    _lblSketch = ESPUI.addControl(ControlType::Label, "Sketch Used", NO_VALUE, ControlColor::None, _lblUptime);
+    _lblTemperature = ESPUI.addControl(ControlType::Label, "Temperature", NO_VALUE, ControlColor::None, _lblUptime);
 
-    auto lblDevice = ESPUI.addControl(Label, "Device", "Model: " + String(ESP.getChipModel()), ControlColor::None, _tab);
-    ESPUI.addControl(Label, "Flash", "Flash: " + String(_flashSize), ControlColor::None, lblDevice);
-    ESPUI.addControl(Label, "Freq", "Freq: " + String(ESP.getCpuFreqMHz()) + " MHz", ControlColor::None, lblDevice);
-    ESPUI.addControl(Label, "Cores", "Cores: " + String(ESP.getChipCores()), ControlColor::None, lblDevice);
-    ESPUI.addControl(Label, "Revision", "Revision: " + String(ESP.getChipRevision()), ControlColor::None, lblDevice);
+    auto lblDevice = ESPUI.addControl(ControlType::Label, "Device", "Model: " + String(ESP.getChipModel()), ControlColor::None, _tab);
+    ESPUI.addControl(ControlType::Label, "Flash", "Flash: " + String(_flashSize), ControlColor::None, lblDevice);
+    ESPUI.addControl(ControlType::Label, "Freq", "Freq: " + String(ESP.getCpuFreqMHz()) + " MHz", ControlColor::None, lblDevice);
+    ESPUI.addControl(ControlType::Label, "Cores", "Cores: " + String(ESP.getChipCores()), ControlColor::None, lblDevice);
+    ESPUI.addControl(ControlType::Label, "Revision", "Revision: " + String(ESP.getChipRevision()), ControlColor::None, lblDevice);
 
-    auto lblSoftware = ESPUI.addControl(Label, "Software", "Arduiono Verison: " + String(ESP_ARDUINO_VERSION_MAJOR) +  "."  + String(ESP_ARDUINO_VERSION_MINOR) +  "."  + String(ESP_ARDUINO_VERSION_PATCH), ControlColor::None, _tab);
-    ESPUI.addControl(Label, "SDK", "SDK Verison: " + String(ESP.getSdkVersion()), ControlColor::None, lblSoftware);
-    ESPUI.addControl(Label, "Build", "Build: " + String(__DATE__ " " __TIME__), ControlColor::None, lblSoftware);
-    
+    auto lblSoftware = ESPUI.addControl(ControlType::Label, "Software", "Arduiono Verison: " + String(ESP_ARDUINO_VERSION_MAJOR) + "." + String(ESP_ARDUINO_VERSION_MINOR) + "." + String(ESP_ARDUINO_VERSION_PATCH), ControlColor::None, _tab);
+    ESPUI.addControl(ControlType::Label, "SDK", "SDK Verison: " + String(ESP.getSdkVersion()), ControlColor::None, lblSoftware);
+    ESPUI.addControl(ControlType::Label, "Build", "Build: " + String(__DATE__ " " __TIME__), ControlColor::None, lblSoftware);
+
     auto lblOTA = ESPUI.addControl(ControlType::Label, "OTA Update", "<form method=""POST"" action=""/ota"" enctype=""multipart/form-data""><input type=""file"" name=""data"" /><input type=""submit"" name=""upload"" value=""Upload"" title=""Upload Files""></form>", ControlColor::None, _tab);
-    ESPUI.setElementStyle(ESPUI.addControl(Label, NO_VALUE, NO_VALUE, ControlColor::None, lblOTA), "background-color: unset; width: 100%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, NO_VALUE, ControlColor::None, lblOTA), "background-color: unset; width: 100%;");
 
     _btnReboot = ESPUI.addControl(
         ControlType::Button, "Reboot", "Press " + String(_rebootCnt) + " times", Carrot, _tab,
@@ -227,7 +226,7 @@ TemperatureAreaTab::TemperatureAreaTab(TemperatureTab *tab, TemperatureArea *con
     // ESPUI.addControl(Separator, "Areas", NO_VALUE, ControlColor::None, tab->getTabId());
 
     _swEnabled = ESPUI.addControl(
-        Switcher, config->name.c_str(), String(config->isEnabled() ? 1 : 0), ControlColor::None, tab->getTabId(),
+        ControlType::Switcher, config->name.c_str(), String(config->isEnabled() ? 1 : 0), ControlColor::None, tab->getTabId(),
         [](Control *sender, int type, void *UserInfo)
         {
             TemperatureAreaTab *instance = static_cast<TemperatureAreaTab *>(UserInfo);
@@ -237,11 +236,11 @@ TemperatureAreaTab::TemperatureAreaTab(TemperatureTab *tab, TemperatureArea *con
         this);
 
     // Empty label for spaceing
-    ESPUI.setElementStyle(ESPUI.addControl(Label, NO_VALUE, NO_VALUE, ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, NO_VALUE, ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
 
-    ESPUI.setElementStyle(ESPUI.addControl(Label, NO_VALUE, "Start °C", ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Start °C", ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
     _sldStart = ESPUI.addControl(
-        Slider, "Start", String(config->getStart()), ControlColor::None, _swEnabled,
+        ControlType::Slider, "Start", String(config->getStart()), ControlColor::None, _swEnabled,
         [](Control *sender, int type, void *UserInfo)
         {
             TemperatureAreaTab *instance = static_cast<TemperatureAreaTab *>(UserInfo);
@@ -249,11 +248,11 @@ TemperatureAreaTab::TemperatureAreaTab(TemperatureTab *tab, TemperatureArea *con
             instance->updateStatus();
         },
         this);
-    ESPUI.addControl(Min, NO_VALUE, MIN_TEMPERATURE_VALUE, ControlColor::None, _sldStart);
-    ESPUI.addControl(Max, NO_VALUE, MAX_TEMPERATURE_VALUE, ControlColor::None, _sldStart);
+    ESPUI.addControl(ControlType::Min, NO_VALUE, MIN_TEMPERATURE_VALUE, ControlColor::None, _sldStart);
+    ESPUI.addControl(ControlType::Max, NO_VALUE, MAX_TEMPERATURE_VALUE, ControlColor::None, _sldStart);
     // ESPUI.addControl(Step, NO_VALUE, "1", ControlColor::None, _sldStart);
 
-    ESPUI.setElementStyle(ESPUI.addControl(Label, NO_VALUE, "End °C", ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "End °C", ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
     _sldEnd = ESPUI.addControl(
         Slider, "End", String(config->getEnd()), ControlColor::None, _swEnabled,
         [](Control *sender, int type, void *UserInfo)
@@ -263,21 +262,21 @@ TemperatureAreaTab::TemperatureAreaTab(TemperatureTab *tab, TemperatureArea *con
             instance->updateStatus();
         },
         this);
-    ESPUI.addControl(Min, NO_VALUE, MIN_TEMPERATURE_VALUE, ControlColor::None, _sldEnd);
-    ESPUI.addControl(Max, NO_VALUE, MAX_TEMPERATURE_VALUE, ControlColor::None, _sldEnd);
+    ESPUI.addControl(ControlType::Min, NO_VALUE, MIN_TEMPERATURE_VALUE, ControlColor::None, _sldEnd);
+    ESPUI.addControl(ControlType::Max, NO_VALUE, MAX_TEMPERATURE_VALUE, ControlColor::None, _sldEnd);
     // ESPUI.addControl(Step, NO_VALUE, "1", ControlColor::None, _sldEnd);
 
-    ESPUI.setElementStyle(ESPUI.addControl(Label, NO_VALUE, "Offset °C", ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Offset °C", ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
     _sldOffset = ESPUI.addControl(
-        Slider, "Offset", String(config->getOffset()), ControlColor::None, _swEnabled,
+        ControlType::Slider, "Offset", String(config->getOffset()), ControlColor::None, _swEnabled,
         [](Control *sender, int type, void *UserInfo)
         {
             TemperatureAreaTab *instance = static_cast<TemperatureAreaTab *>(UserInfo);
             ESPUI.updateSlider(sender->id, instance->_config->setOffset(sender->value.toInt()));
         },
         this);
-    ESPUI.addControl(Min, NO_VALUE, MIN_TEMPERATURE_VALUE, ControlColor::None, _sldOffset);
-    ESPUI.addControl(Max, NO_VALUE, MAX_TEMPERATURE_VALUE, ControlColor::None, _sldOffset);
+    ESPUI.addControl(ControlType::Min, NO_VALUE, MIN_TEMPERATURE_VALUE, ControlColor::None, _sldOffset);
+    ESPUI.addControl(ControlType::Max, NO_VALUE, MAX_TEMPERATURE_VALUE, ControlColor::None, _sldOffset);
     // ESPUI.addControl(Step, NO_VALUE, "1", ControlColor::None, _sldOffset);
 
     updateStatus();
@@ -319,7 +318,7 @@ TemperatureTab::TemperatureTab(TemperatureConfig *config) : _config(config)
 {
     _tab = ESPUI.addControl(Tab, NO_VALUE, "Temperature");
     _swManualMode = ESPUI.addControl(
-        Switcher, "Manual Temperature", String(config->isManualMode() ? 1 : 0), ControlColor::None, _tab,
+        ControlType::Switcher, "Manual Temperature", String(config->isManualMode() ? 1 : 0), ControlColor::None, _tab,
         [](Control *sender, int type, void *UserInfo)
         {
             TemperatureTab *instance = static_cast<TemperatureTab *>(UserInfo);
@@ -329,22 +328,22 @@ TemperatureTab::TemperatureTab(TemperatureConfig *config) : _config(config)
         this);
 
     _sldManualTemp = ESPUI.addControl(
-        Slider, "Temperature", String(config->getManualTemperature()), ControlColor::None, _swManualMode,
+        ControlType::Slider, "Temperature", String(config->getManualTemperature()), ControlColor::None, _swManualMode,
         [](Control *sender, int type, void *UserInfo)
         {
             TemperatureTab *instance = static_cast<TemperatureTab *>(UserInfo);
             ESPUI.updateSlider(sender->id, instance->_config->setManualTemperature(sender->value.toInt()));
         },
         this);
-    ESPUI.addControl(Min, NO_VALUE, MIN_TEMPERATURE_VALUE, ControlColor::None, _sldManualTemp);
-    ESPUI.addControl(Max, NO_VALUE, MAX_TEMPERATURE_VALUE, ControlColor::None, _sldManualTemp);
+    ESPUI.addControl(ControlType::Min, NO_VALUE, MIN_TEMPERATURE_VALUE, ControlColor::None, _sldManualTemp);
+    ESPUI.addControl(ControlType::Max, NO_VALUE, MAX_TEMPERATURE_VALUE, ControlColor::None, _sldManualTemp);
     // ESPUI.addControl(Step, NO_VALUE, "1", ControlColor::None, _sldManualTemp);
 
     ////
     //// TEST START
     ////
 
-    // auto testSliderGroup = ESPUI.addControl(Label, "Temperature Adjustment", NO_VALUE, ControlColor::None, _tab);
+    // auto testSliderGroup = ESPUI.addControl(ControlType::Label, "Temperature Adjustment", NO_VALUE, ControlColor::None, _tab);
     // ESPUI.setElementStyle(testSliderGroup, "background-color: unset; width: 0px; height: 0px; display: none;");
     // String inputStyle = "width: 30%;";
     // String labelStyle = "background-color: unset; width: 70%; text-align-last: left;";
@@ -360,7 +359,7 @@ TemperatureTab::TemperatureTab(TemperatureConfig *config) : _config(config)
     //         this);
     //     ESPUI.setElementStyle(inputCtl, inputStyle);
     //
-    //    auto lblCtl = ESPUI.addControl(Label, NO_VALUE, "°C  at " + String(i) + " °C", ControlColor::None, testSliderGroup);
+    //    auto lblCtl = ESPUI.addControl(ControlType::Label, NO_VALUE, "°C  at " + String(i) + " °C", ControlColor::None, testSliderGroup);
     //    ESPUI.setElementStyle(lblCtl, labelStyle);
     //}
 
@@ -404,7 +403,7 @@ PowerAreaTab::PowerAreaTab(PowerTab *tab, PowerArea *config) : _tab(tab), _confi
     // ESPUI.addControl(Separator, "Areas", NO_VALUE, ControlColor::None, tab->getTabId());
 
     _swEnabled = ESPUI.addControl(
-        Switcher, config->name.c_str(), String(config->isEnabled() ? 1 : 0), ControlColor::None, tab->getTabId(),
+        ControlType::Switcher, config->name.c_str(), String(config->isEnabled() ? 1 : 0), ControlColor::None, tab->getTabId(),
         [](Control *sender, int type, void *UserInfo)
         {
             PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
@@ -414,9 +413,9 @@ PowerAreaTab::PowerAreaTab(PowerTab *tab, PowerArea *config) : _tab(tab), _confi
         this);
 
     // Empty label for spaceing
-    ESPUI.setElementStyle(ESPUI.addControl(Label, NO_VALUE, NO_VALUE, ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, NO_VALUE, ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
 
-    ESPUI.setElementStyle(ESPUI.addControl(Label, NO_VALUE, "Start °C", ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Start °C", ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
     _sldStart = ESPUI.addControl(
         Slider, "Start", String(config->getStart()), ControlColor::None, _swEnabled,
         [](Control *sender, int type, void *UserInfo)
@@ -426,13 +425,13 @@ PowerAreaTab::PowerAreaTab(PowerTab *tab, PowerArea *config) : _tab(tab), _confi
             instance->updateStatus();
         },
         this);
-    ESPUI.addControl(Min, NO_VALUE, MIN_TEMPERATURE_VALUE, ControlColor::None, _sldStart);
-    ESPUI.addControl(Max, NO_VALUE, MAX_TEMPERATURE_VALUE, ControlColor::None, _sldStart);
+    ESPUI.addControl(ControlType::Min, NO_VALUE, MIN_TEMPERATURE_VALUE, ControlColor::None, _sldStart);
+    ESPUI.addControl(ControlType::Max, NO_VALUE, MAX_TEMPERATURE_VALUE, ControlColor::None, _sldStart);
     // ESPUI.addControl(Step, NO_VALUE, "1", ControlColor::None, _sldStart);
 
-    ESPUI.setElementStyle(ESPUI.addControl(Label, NO_VALUE, "End °C", ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "End °C", ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
     _sldEnd = ESPUI.addControl(
-        Slider, "End", String(config->getEnd()), ControlColor::None, _swEnabled,
+        ControlType::Slider, "End", String(config->getEnd()), ControlColor::None, _swEnabled,
         [](Control *sender, int type, void *UserInfo)
         {
             PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
@@ -440,22 +439,22 @@ PowerAreaTab::PowerAreaTab(PowerTab *tab, PowerArea *config) : _tab(tab), _confi
             instance->updateStatus();
         },
         this);
-    ESPUI.addControl(Min, NO_VALUE, MIN_TEMPERATURE_VALUE, ControlColor::None, _sldEnd);
-    ESPUI.addControl(Max, NO_VALUE, MAX_TEMPERATURE_VALUE, ControlColor::None, _sldEnd);
+    ESPUI.addControl(ControlType::Min, NO_VALUE, MIN_TEMPERATURE_VALUE, ControlColor::None, _sldEnd);
+    ESPUI.addControl(ControlType::Max, NO_VALUE, MAX_TEMPERATURE_VALUE, ControlColor::None, _sldEnd);
     // ESPUI.addControl(Step, NO_VALUE, "1", ControlColor::None, _sldEnd);
 
-    ESPUI.setElementStyle(ESPUI.addControl(Label, NO_VALUE, "Power Limit \%", ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Power Limit \%", ControlColor::None, _swEnabled), "background-color: unset; width: 100%;");
     _sldPowerLimit = ESPUI.addControl(
-        Slider, "Limit", String(config->getPowerLimit()), ControlColor::None, _swEnabled,
+        ControlType::Slider, "Limit", String(config->getPowerLimit()), ControlColor::None, _swEnabled,
         [](Control *sender, int type, void *UserInfo)
         {
             PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
             ESPUI.updateSlider(sender->id, instance->_config->setPowerLimit(sender->value.toInt()));
         },
         this);
-    ESPUI.addControl(Min, NO_VALUE, MIN_POWER_LIMIT_VALUE, ControlColor::None, _sldPowerLimit);
-    ESPUI.addControl(Max, NO_VALUE, MAX_POWER_LIMIT_VALUE, ControlColor::None, _sldPowerLimit);
-    ESPUI.addControl(Step, NO_VALUE, STEP_POWER_LIMIT_VALUE, ControlColor::None, _sldPowerLimit);
+    ESPUI.addControl(ControlType::Min, NO_VALUE, MIN_POWER_LIMIT_VALUE, ControlColor::None, _sldPowerLimit);
+    ESPUI.addControl(ControlType::Max, NO_VALUE, MAX_POWER_LIMIT_VALUE, ControlColor::None, _sldPowerLimit);
+    ESPUI.addControl(ControlType::Step, NO_VALUE, STEP_POWER_LIMIT_VALUE, ControlColor::None, _sldPowerLimit);
 
     updateStatus();
 }
@@ -496,7 +495,7 @@ PowerTab::PowerTab(PowerConfig *config) : _config(config)
 {
     _tab = ESPUI.addControl(Tab, NO_VALUE, "Power Limit");
     _swManualMode = ESPUI.addControl(
-        Switcher, "Manual Power Limit", String(config->isManualMode() ? 1 : 0), ControlColor::None, _tab,
+        ControlType::Switcher, "Manual Power Limit", String(config->isManualMode() ? 1 : 0), ControlColor::None, _tab,
         [](Control *sender, int type, void *UserInfo)
         {
             PowerTab *instance = static_cast<PowerTab *>(UserInfo);
@@ -506,22 +505,22 @@ PowerTab::PowerTab(PowerConfig *config) : _config(config)
         this);
 
     _sldManualPower = ESPUI.addControl(
-        Slider, "Power", String(config->getManualPower()), ControlColor::None, _swManualMode,
+        ControlType::Slider, "Power", String(config->getManualPower()), ControlColor::None, _swManualMode,
         [](Control *sender, int type, void *UserInfo)
         {
             PowerTab *instance = static_cast<PowerTab *>(UserInfo);
             ESPUI.updateSlider(sender->id, instance->_config->setManualPower(sender->value.toInt()));
         },
         this);
-    ESPUI.addControl(Min, NO_VALUE, MIN_POWER_LIMIT_VALUE, ControlColor::None, _sldManualPower);
-    ESPUI.addControl(Max, NO_VALUE, MAX_POWER_LIMIT_VALUE, ControlColor::None, _sldManualPower);
-    ESPUI.addControl(Step, NO_VALUE, STEP_POWER_LIMIT_VALUE, ControlColor::None, _sldManualPower);
+    ESPUI.addControl(ControlType::Min, NO_VALUE, MIN_POWER_LIMIT_VALUE, ControlColor::None, _sldManualPower);
+    ESPUI.addControl(ControlType::Max, NO_VALUE, MAX_POWER_LIMIT_VALUE, ControlColor::None, _sldManualPower);
+    ESPUI.addControl(ControlType::Step, NO_VALUE, STEP_POWER_LIMIT_VALUE, ControlColor::None, _sldManualPower);
 
     ////
     //// TEST START
     ////
 
-    // auto testSliderGroup = ESPUI.addControl(Label, "Power Adjustment", NO_VALUE, ControlColor::None, _tab);
+    // auto testSliderGroup = ESPUI.addControl(ControlType::Label, "Power Adjustment", NO_VALUE, ControlColor::None, _tab);
     // ESPUI.setElementStyle(testSliderGroup, "background-color: unset; width: 0px; height: 0px; display: none;");
     // String inputStyle = "width: 30%;";
     // String labelStyle = "background-color: unset; width: 70%; text-align-last: left;";
@@ -547,7 +546,7 @@ PowerTab::PowerTab(PowerConfig *config) : _config(config)
     //        this);
     //    ESPUI.setElementStyle(inputCtl, inputStyle);
     //
-    //    auto lblCtl = ESPUI.addControl(Label, NO_VALUE, "\% at " + String(i) + " °C", ControlColor::None, testSliderGroup);
+    //    auto lblCtl = ESPUI.addControl(ControlType::Label, NO_VALUE, "\% at " + String(i) + " °C", ControlColor::None, testSliderGroup);
     //    ESPUI.setElementStyle(lblCtl, labelStyle);
     //}
 
@@ -588,39 +587,137 @@ void PowerTab::updateStatus()
 
 WifiInfoTab::WifiInfoTab()
 {
-    _tab = ESPUI.addControl(Tab, NO_VALUE, "WiFi", ControlColor::None, Control::noParent);
+    _tab = ESPUI.addControl(
+        ControlType::Tab, NO_VALUE, "WiFi", ControlColor::None, Control::noParent,
+        [](Control *sender, int type, void *UserInfo)
+        {
+            // Update on open tab
+            WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
+            instance->update();
+            ESPUI.updateText(instance->_txtPassword, WifiModeChamp.getConfiguredWiFiPassword());
+            ESPUI.updateText(instance->_txtSsid, WifiModeChamp.getConfiguredWiFiSSID());
+            instance->updateBtnSaveState();
+        },
+        this);
 
-    _lblConfiguration = ESPUI.addControl(Label, "Configuration", "Hostname: " + String(WiFi.getHostname()), ControlColor::None, _tab);
-    _lblMac = ESPUI.addControl(Label, "MAC", NO_VALUE, ControlColor::None, _lblConfiguration);
-    _lblIp = ESPUI.addControl(Label, "IP", NO_VALUE, ControlColor::None, _lblConfiguration);
-    _lblDns = ESPUI.addControl(Label, "DNS", NO_VALUE, ControlColor::None, _lblConfiguration);
-    _lblGateway = ESPUI.addControl(Label, "Gateway", NO_VALUE, ControlColor::None, _lblConfiguration);
-    _lblSubnet = ESPUI.addControl(Label, "Subnet", NO_VALUE, ControlColor::None, _lblConfiguration);
-    _lblSsid = ESPUI.addControl(Label, "SSID", NO_VALUE, ControlColor::None, _lblConfiguration);
-    _lblRssi = ESPUI.addControl(Label, "RSSI", NO_VALUE, ControlColor::None, _lblConfiguration);
+    _lblInfo = ESPUI.addControl(ControlType::Label, "Info", "Hostname: " + String(WiFi.getHostname()), ControlColor::None, _tab);
+    _lblMac = ESPUI.addControl(ControlType::Label, "MAC", NO_VALUE, ControlColor::None, _lblInfo);
+    _lblIp = ESPUI.addControl(ControlType::Label, "IP", NO_VALUE, ControlColor::None, _lblInfo);
+    _lblDns = ESPUI.addControl(ControlType::Label, "DNS", NO_VALUE, ControlColor::None, _lblInfo);
+    _lblGateway = ESPUI.addControl(ControlType::Label, "Gateway", NO_VALUE, ControlColor::None, _lblInfo);
+    _lblSubnet = ESPUI.addControl(ControlType::Label, "Subnet", NO_VALUE, ControlColor::None, _lblInfo);
+    _lblSsid = ESPUI.addControl(ControlType::Label, "SSID", NO_VALUE, ControlColor::None, _lblInfo);
+    _lblRssi = ESPUI.addControl(ControlType::Label, "RSSI", NO_VALUE, ControlColor::None, _lblInfo);
 
-    //_btnReset = ESPUI.addControl(
-    //    ControlType::Button, "Reset", "Press " + String(_resetCnt) + " times", Carrot, _tab,
-    //    [](Control *sender, int type, void *UserInfo)
-    //    {
-    //        if (type != B_DOWN)
-    //        {
-    //            return;
-    //        }
-    //
-    //        WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
-    //        instance->_resetCnt--;
-    //        if (instance->_resetCnt < 1)
-    //        {
-    //            instance->_wifiManager->resetSettings();
-    //            ESP.restart();
-    //        }
-    //
-    //        ESPUI.updateButton(sender->id, "Press " + String(instance->_resetCnt) + " times");
-    //    },
-    //    this);
+    auto lblWifiSettings = ESPUI.addControl(ControlType::Label, "WiFi Configuration", NO_VALUE, ControlColor::None, _tab);
+    ESPUI.setElementStyle(lblWifiSettings, "background-color: unset; width: 0px; height: 0px; display: none;");
+    _selSsid = ESPUI.addControl(
+        ControlType::Select, NO_VALUE, WifiModeChamp.getConfiguredWiFiSSID(), ControlColor::None, lblWifiSettings,
+        [](Control *sender, int type, void *UserInfo)
+        {
+            WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
+            if (!sender->value.isEmpty())
+            {
+                ESPUI.updateText(instance->_txtSsid, sender->value);
+            }
 
+            instance->updateBtnSaveState();
+        },
+        this);
+
+    _wifiOptions[0].Label = "Search & Select";
+    _wifiOptions[0].Control = ESPUI.addControl(ControlType::Option, _wifiOptions[0].Label.c_str(), _wifiOptions[0].Value, ControlColor::None, _selSsid);
+    ESPUI.setEnabled(_selSsid, false);
+
+    _txtSsid = ESPUI.addControl(
+        ControlType::Text, NO_VALUE, WifiModeChamp.getConfiguredWiFiSSID(), ControlColor::None, lblWifiSettings,
+        [](Control *sender, int type, void *UserInfo)
+        {
+            WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
+            instance->updateBtnSaveState();
+        },
+        this);
+
+    _txtPassword = ESPUI.addControl(
+        ControlType::Password, NO_VALUE, WifiModeChamp.getConfiguredWiFiPassword(), ControlColor::None, lblWifiSettings,
+        [](Control *sender, int type, void *UserInfo)
+        {
+            WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
+            instance->updateBtnSaveState();
+        },
+        this);
+
+    _btnSave = ESPUI.addControl(
+        ControlType::Button, NO_VALUE, "Update & Connect", ControlColor::None, lblWifiSettings,
+        [](Control *sender, int type, void *UserInfo)
+        {
+            if (type != B_DOWN)
+            {
+                return;
+            }
+
+            WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
+            WifiModeChamp.setWifiCredentials(ESPUI.getControl(instance -> _txtSsid)->value, ESPUI.getControl(instance -> _txtPassword)->value, true);
+        },
+        this);
+
+    _btnScan = ESPUI.addControl(
+        ControlType::Button, NO_VALUE, "Search for WiFis", ControlColor::None, lblWifiSettings,
+        [](Control *sender, int type, void *UserInfo)
+        {
+            if (type != B_DOWN)
+            {
+                return;
+            }
+
+            WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
+            WifiModeChamp.scanWifiNetworks();
+            ESPUI.setEnabled(sender->id, false);
+        },
+        this);
+
+    WifiModeChamp.scanCallback(std::bind(&WifiInfoTab::wifiScanCompleted, this, std::placeholders::_1));
     update();
+    updateBtnSaveState();
+}
+
+void WifiInfoTab::wifiScanCompleted(int16_t networkCnt)
+{
+    ESPUI.setEnabled(_btnScan, true);
+    if (networkCnt < 1)
+    {
+        return;
+    }
+
+    ESPUI.setEnabled(_selSsid, true);
+    for (int16_t o = 0; o < AmountOptions; ++o)
+    {
+        ESPUI.removeControl(_wifiOptions[o].Control, false);
+        _wifiOptions[o].Control = 0;
+        _wifiOptions[o].Label = emptyString;
+        _wifiOptions[o].Value = emptyString;
+
+        if (o < networkCnt)
+        {
+            auto rssi = WiFi.RSSI(o);
+            _wifiOptions[o].Value = WiFi.SSID(o);
+            _wifiOptions[o].Label = String(rssi) + "db (" + String(WifiModeChampClass::wifiSignalQuality(rssi)) + "%) " + _wifiOptions[o].Value;
+            _wifiOptions[o].Control = ESPUI.addControl(ControlType::Option, _wifiOptions[o].Label.c_str(), _wifiOptions[o].Value, ControlColor::None, _selSsid);
+        }
+    }
+
+    ESPUI.jsonReload();
+}
+
+void WifiInfoTab::updateBtnSaveState()
+{
+    auto configuredSsid = WifiModeChamp.getConfiguredWiFiSSID();
+    auto txtSsid = ESPUI.getControl(_txtSsid)->value;
+    auto configuredPassword = WifiModeChamp.getConfiguredWiFiPassword();
+    auto txtPassword = ESPUI.getControl(_txtPassword)->value;
+    auto valid = txtPassword.isEmpty() || txtPassword.length() > 7;
+    auto changePending = valid && (configuredSsid != txtSsid || configuredPassword != txtPassword);
+    ESPUI.setEnabled(_btnSave, changePending);
 }
 
 void WifiInfoTab::update()
@@ -633,5 +730,5 @@ void WifiInfoTab::update()
     ESPUI.updateLabel(_lblSsid, "SSID: " + String(WiFi.SSID()));
 
     auto rssi = WiFi.RSSI();
-    ESPUI.updateLabel(_lblRssi, "RSSI: " + String(rssi) + " db (" + String(min(max(2 * (rssi + 100), 0), 100)) + " %)");
+    ESPUI.updateLabel(_lblRssi, "RSSI: " + String(rssi) + " db (" + String(WifiModeChampClass::wifiSignalQuality(rssi)) + " %)");
 }
