@@ -152,7 +152,7 @@ struct WiFiOption
 class WifiInfoTab
 {
 private:
-    static const int16_t AmountOptions = 8;
+    static const int16_t AmountWiFiOptions = 10;
     uint16_t _tab;
     uint16_t _lblInfo;
     uint16_t _lblMac;
@@ -167,7 +167,7 @@ private:
     uint16_t _txtPassword;
     uint16_t _btnSave;
     uint16_t _btnScan;
-    WiFiOption _wifiOptions[AmountOptions];
+    WiFiOption _wifiOptions[AmountWiFiOptions];
 
     void updateBtnSaveState();
     void wifiScanCompleted(int16_t networkCnt);

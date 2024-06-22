@@ -625,9 +625,11 @@ WifiInfoTab::WifiInfoTab()
         },
         this);
 
-    _wifiOptions[0].Label = "Search & Select";
-    _wifiOptions[0].Control = ESPUI.addControl(ControlType::Option, _wifiOptions[0].Label.c_str(), _wifiOptions[0].Value, ControlColor::None, _selSsid);
     ESPUI.setEnabled(_selSsid, false);
+    if(WifiModeChamp.getConfiguredWiFiSSID().isEmpty())
+    {
+        ESPUI.addControl(ControlType::Option, emptyString.c_str(), emptyString, ControlColor::None, _selSsid);
+    }    
 
     _txtSsid = ESPUI.addControl(
         ControlType::Text, NO_VALUE, WifiModeChamp.getConfiguredWiFiSSID(), ControlColor::None, lblWifiSettings,
@@ -648,7 +650,7 @@ WifiInfoTab::WifiInfoTab()
         this);
 
     _btnSave = ESPUI.addControl(
-        ControlType::Button, NO_VALUE, "Update & Connect", ControlColor::None, lblWifiSettings,
+        ControlType::Button, NO_VALUE, "Save & Connect", ControlColor::None, lblWifiSettings,
         [](Control *sender, int type, void *UserInfo)
         {
             if (type != B_DOWN)
@@ -662,7 +664,7 @@ WifiInfoTab::WifiInfoTab()
         this);
 
     _btnScan = ESPUI.addControl(
-        ControlType::Button, NO_VALUE, "Search for WiFis", ControlColor::None, lblWifiSettings,
+        ControlType::Button, NO_VALUE, "Search for WiFi", ControlColor::None, lblWifiSettings,
         [](Control *sender, int type, void *UserInfo)
         {
             if (type != B_DOWN)
@@ -690,23 +692,71 @@ void WifiInfoTab::wifiScanCompleted(int16_t networkCnt)
     }
 
     ESPUI.setEnabled(_selSsid, true);
-    for (int16_t o = 0; o < AmountOptions; ++o)
-    {
-        ESPUI.removeControl(_wifiOptions[o].Control, false);
-        _wifiOptions[o].Control = 0;
-        _wifiOptions[o].Label = emptyString;
-        _wifiOptions[o].Value = emptyString;
 
-        if (o < networkCnt)
+    // For AP mode only add new WiFis, since captive portals might not support page reload
+    if(WifiModeChamp.getMode() == WifiModeChampMode::AP)
+    {
+        for (int16_t n = 0; n < networkCnt; ++n)
         {
-            auto rssi = WiFi.RSSI(o);
-            _wifiOptions[o].Value = WiFi.SSID(o);
-            _wifiOptions[o].Label = String(rssi) + "db (" + String(WifiModeChampClass::wifiSignalQuality(rssi)) + "%) " + _wifiOptions[o].Value;
-            _wifiOptions[o].Control = ESPUI.addControl(ControlType::Option, _wifiOptions[o].Label.c_str(), _wifiOptions[o].Value, ControlColor::None, _selSsid);
+            auto ssid = WiFi.SSID(n);
+            auto found = false;
+            for (int16_t o = 0; o < AmountWiFiOptions; ++o)
+            {
+                if(_wifiOptions[o].Control < 1)
+                {
+                    // Slot is free and can't contain any WiFi
+                    break;
+                }
+
+                if(_wifiOptions[o].Value == ssid)
+                {
+                    // WiFi already exists
+                    found = true;
+                    break;
+                }
+            }
+
+            if(!found)
+            {
+                for (int16_t o = 0; o < AmountWiFiOptions; ++o)
+                {
+                    if(_wifiOptions[o].Control > 0)
+                    {
+                        // Slot is in use
+                        continue;
+                    }
+
+                    // Add new option to a free slot
+                    _wifiOptions[o].Value = ssid;
+                    auto rssi = WiFi.RSSI(n);
+                    _wifiOptions[o].Label = String(rssi) + "db (" + String(WifiModeChampClass::wifiSignalQuality(rssi)) + "%) " + _wifiOptions[o].Value;
+                    _wifiOptions[o].Control = ESPUI.addControl(ControlType::Option, _wifiOptions[o].Label.c_str(), _wifiOptions[o].Value, ControlColor::None, _selSsid);
+                    break;
+                }
+            }
         }
     }
-
-    ESPUI.jsonReload();
+    else
+    {
+        // TODO: is there a better solution? On the other hand is will not be used very much...
+        for (int16_t o = 0; o < AmountWiFiOptions; ++o)
+        {
+            ESPUI.removeControl(_wifiOptions[o].Control, false);
+            _wifiOptions[o].Control = 0;
+            _wifiOptions[o].Label = emptyString;
+            _wifiOptions[o].Value = emptyString;
+        
+            if (o < networkCnt)
+            {
+                auto rssi = WiFi.RSSI(o);
+                _wifiOptions[o].Value = WiFi.SSID(o);
+                _wifiOptions[o].Label = String(rssi) + "db (" + String(WifiModeChampClass::wifiSignalQuality(rssi)) + "%) " + _wifiOptions[o].Value;
+                _wifiOptions[o].Control = ESPUI.addControl(ControlType::Option, _wifiOptions[o].Label.c_str(), _wifiOptions[o].Value, ControlColor::None, _selSsid);
+            }
+        }
+        
+        ESPUI.jsonReload();
+    }
 }
 
 void WifiInfoTab::updateBtnSaveState()

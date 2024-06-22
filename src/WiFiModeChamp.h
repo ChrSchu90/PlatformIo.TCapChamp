@@ -42,6 +42,17 @@ enum class WifiModeChampMode
     STA = 2
 };
 
+enum class WifiModeChampScanRequestState
+{
+    None = 0,
+    // Request has been made
+    Requested = 1,
+    // Request is pending
+    Pending = 2,
+    // Request has been completed
+    Completed = 3
+};
+
 typedef std::function<void(WifiModeChampState previous, WifiModeChampState state)> WifiModeChampStateCallback;
 
 typedef std::function<void(int16_t networkCnt)> WifiModeChampWifiScanCallback;
@@ -107,9 +118,9 @@ public:
     int8_t getWiFiSignalQuality() const;
 
     /// @brief Scan avaialbe WiFi networks, use the scanCallback to receive the scan result
-    void scanWifiNetworks() { _scanRequested = true; }
+    void scanWifiNetworks() { _scanRequestState = WifiModeChampScanRequestState::Requested; }
     /// @brief Gets if there is a WiFi scan pending
-    bool getWifiScanPending() { return _scanRequested == true; }
+    bool getWifiScanPending() { return _scanRequestState == WifiModeChampScanRequestState::Completed; }
 
 
     /// @brief Gets the hostname passed from begin()
@@ -165,7 +176,7 @@ private:
     uint32_t _timeoutWifiScan = 10;
     int64_t _lastScanCompleted = -1;
     int64_t _lastScanStarted = -1;
-    bool _scanRequested = false;
+    WifiModeChampScanRequestState _scanRequestState = WifiModeChampScanRequestState::None;
     WiFiEventId_t _wifiEventListenerId = 0;
 
 private:

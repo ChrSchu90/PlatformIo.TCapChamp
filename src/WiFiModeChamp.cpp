@@ -146,8 +146,8 @@ int8_t WifiModeChampClass::getWiFiSignalQuality() const
 int8_t WifiModeChampClass::wifiSignalQuality(int32_t rssi)
 {
     return min(max(2 * (rssi + 100), 0), 100);
-    //int32_t s = map(rssi, -90, -30, 0, 100);
-    //return s > 100 ? 100 : (s < 0 ? 0 : s);
+    // int32_t s = map(rssi, -90, -30, 0, 100);
+    // return s > 100 ? 100 : (s < 0 ? 0 : s);
 }
 
 const String WifiModeChampClass::getDefaultHostName()
@@ -273,18 +273,6 @@ void WifiModeChampClass::loop()
     if (_state == WifiModeChampState::NETWORK_DISABLED)
         return;
 
-    // handle WiFi scan request
-    if (_scanRequested && _scanCallback != nullptr)
-    {
-        auto networkCnt = scanWifiNetworks(false);
-        if (networkCnt > 0)
-        {
-            _scanCallback(networkCnt);
-            clearWifiScanResult();
-            _scanRequested = false;
-        }
-    }
-
     if (_dnsServer != nullptr)
     {
         _dnsServer->processNextRequest();
@@ -336,15 +324,44 @@ void WifiModeChampClass::loop()
         auto scanCnt = scanWifiNetworks(false);
         if (scanCnt > 0)
         {
+            // handle manual WiFi scan request
+            if (_scanRequestState == WifiModeChampScanRequestState::Requested || _scanRequestState == WifiModeChampScanRequestState::Pending)
+            {
+                _scanRequestState = WifiModeChampScanRequestState::Completed;
+                if (_scanCallback != nullptr)
+                {
+                    _scanCallback(scanCnt);
+                }
+            }
+            
+            // Check if configured WiFi is available to trigger a reconnect
             for (int16_t i = 0; i < scanCnt; ++i)
             {
                 if (WiFi.SSID(i) == _wifiSsid)
                 {
+                    clearWifiScanResult(); // Only clear on success, otherwise the scan result will be error and the wait time will not work
                     _stopAP();
                     _setState(WifiModeChampState::NETWORK_ENABLED);
-                    clearWifiScanResult();
                     break;
                 }
+            }
+        }
+    }
+    else
+    {
+        // handle manual WiFi scan request
+        if (_scanRequestState == WifiModeChampScanRequestState::Requested || _scanRequestState == WifiModeChampScanRequestState::Pending)
+        {
+            auto networkCnt = scanWifiNetworks(false);
+            if (networkCnt > 0)
+            {
+                _scanRequestState = WifiModeChampScanRequestState::Completed;
+                if (_scanCallback != nullptr)
+                {
+                    _scanCallback(networkCnt);
+                }
+
+                clearWifiScanResult();
             }
         }
     }
@@ -527,8 +544,8 @@ void WifiModeChampClass::clearWifiScanResult()
     LOG_DEBUG(F("WiFiModeChamp"), F("clearWifiScanResult"), F("Cleaning up WiFi scan results"));
 #endif
     WiFi.scanDelete();
-    //_lastScanStarted = -1;  // TODO: needed???
-    //_lastScanCompleted = -1;  // TODO: needed???
+    //_lastScanStarted = -1;
+    //_lastScanCompleted = -1;
 }
 
 void WifiModeChampClass::startWifiScan()
@@ -552,6 +569,7 @@ int16_t WifiModeChampClass::scanWifiNetworks(bool ignoreWaitTime)
         return 0;
     }
 
+    // Scan completed
     if (scanCnt > 0 && _lastScanStarted > 0)
     {
 #ifdef LOG_DEBUG
@@ -562,15 +580,18 @@ int16_t WifiModeChampClass::scanWifiNetworks(bool ignoreWaitTime)
         return scanCnt;
     }
 
-    if (ignoreWaitTime)
+    // Foreced scan as request
+    if (_scanRequestState == WifiModeChampScanRequestState::Requested)
     {
 #ifdef LOG_DEBUG
         LOG_DEBUG(F("WiFiModeChamp"), F("scanWifiNetworks"), F("Starting forced WiFi scan..."));
 #endif
+        _scanRequestState = WifiModeChampScanRequestState::Pending;
         startWifiScan();
         return 0;
     }
 
+    auto currentMillis = millis();
     if (scanCnt == WIFI_SCAN_FAILED)
     {
         // Scan is cleared or has failed
@@ -578,7 +599,6 @@ int16_t WifiModeChampClass::scanWifiNetworks(bool ignoreWaitTime)
         return 0;
     }
 
-    auto currentMillis = millis();
     if (_lastScanStarted > 0 && currentMillis - _lastScanStarted >= _timeoutWifiScan * 1000)
     {
 #ifdef LOG_DEBUG
