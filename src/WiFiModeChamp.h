@@ -1,3 +1,12 @@
+/*
+    Source: https://github.com/mathieucarbou/MycilaESPConnect
+    Modified to implement only the reconnect and WiFi mode handling,
+    since this project does already provide a webinterface.
+
+    In addition: Reconnets to the WiFi after a disconnect, by checking if
+    the configured WiFi is available again.
+*/
+
 #pragma once
 
 #include <DNSServer.h>
