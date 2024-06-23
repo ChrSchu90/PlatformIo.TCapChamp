@@ -77,6 +77,7 @@ Webinterface::Webinterface(uint16_t port, Config *config)
             // if the final flag is set then this is the last frame of data
             if (final)
             {
+                request->redirect("/");
                 if (Update.end(true))
                 {
                     // true to set the size to the current progress
