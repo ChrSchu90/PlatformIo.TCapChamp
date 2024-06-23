@@ -741,15 +741,20 @@ void WifiInfoTab::wifiScanCompleted(int16_t networkCnt)
         // TODO: is there a better solution? On the other hand is will not be used very much...
         for (int16_t o = 0; o < AmountWiFiOptions; ++o)
         {
-            ESPUI.removeControl(_wifiOptions[o].Control, false);
-            _wifiOptions[o].Control = 0;
-            _wifiOptions[o].Label = emptyString;
-            _wifiOptions[o].Value = emptyString;
-        
+            // Remove old option
+            if(_wifiOptions[o].Control > 0)
+            {
+                ESPUI.removeControl(_wifiOptions[o].Control, false);
+                _wifiOptions[o].Control = 0;
+                _wifiOptions[o].Label = emptyString;
+                _wifiOptions[o].Value = emptyString;
+            }            
+
+            // Add new WiFi to option that has been found
             if (o < networkCnt)
             {
-                auto rssi = WiFi.RSSI(o);
                 _wifiOptions[o].Value = WiFi.SSID(o);
+                auto rssi = WiFi.RSSI(o);
                 _wifiOptions[o].Label = String(rssi) + "db (" + String(WifiModeChampClass::wifiSignalQuality(rssi)) + "%) " + _wifiOptions[o].Value;
                 _wifiOptions[o].Control = ESPUI.addControl(ControlType::Option, _wifiOptions[o].Label.c_str(), _wifiOptions[o].Value, ControlColor::None, _selSsid);
             }

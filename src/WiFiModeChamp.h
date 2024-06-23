@@ -4,9 +4,9 @@
 #include <WiFi.h>
 #include "SerialLogging.h"
 
-#define KEY_WIFI_SETTINGS_NAMESPACE "WifiModeChamp" // Namespace key for preferences to store data
-#define KEY_WIFI_SETTINGS_SSID "WiFiSsid"           // Key for WiFi SSID
-#define KEY_WIFI_SETTINGS_PASSWORD "WiFiPassword"   // Key for WiFi Password
+#define KEY_WIFI_SETTINGS_NAMESPACE "WifiModeChamp" // Preferences namespace key for preferences to store data
+#define KEY_WIFI_SETTINGS_SSID "WiFiSsid"           // Preferences value key for the WiFi SSID
+#define KEY_WIFI_SETTINGS_PASSWORD "WiFiPassword"   // Preferences value key for the WiFi Password
 
 enum class WifiModeChampState
 {

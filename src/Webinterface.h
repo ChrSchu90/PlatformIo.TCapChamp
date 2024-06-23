@@ -152,7 +152,7 @@ struct WiFiOption
 class WifiInfoTab
 {
 private:
-    static const int16_t AmountWiFiOptions = 10;
+    static const int16_t AmountWiFiOptions = 8;
     uint16_t _tab;
     uint16_t _lblInfo;
     uint16_t _lblMac;
