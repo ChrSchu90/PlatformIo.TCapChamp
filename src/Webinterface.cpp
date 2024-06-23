@@ -45,8 +45,7 @@ Webinterface::Webinterface(uint16_t port, Config *config)
 
     // WiFi captive portal for iOS
     ESPUI.server->on(
-        "/hotspot-detect.html",
-        HTTP_GET,
+        "/hotspot-detect.html", HTTP_GET,
         [](AsyncWebServerRequest *request)
         {
             AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", HTML_INDEX);
@@ -55,12 +54,7 @@ Webinterface::Webinterface(uint16_t port, Config *config)
 
     // NOTE: Control is added inside SystemTab! The callback needs to be added after the webserver has been started.
     ESPUI.server->on(
-        "/ota",
-        HTTP_POST,
-        [](AsyncWebServerRequest *request)
-        {
-            request->send(200);
-        },
+        "/ota", HTTP_POST, [](AsyncWebServerRequest *request) { request->send(200); },
         [](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
         {
             if (!index)
@@ -165,7 +159,7 @@ SystemInfoTab::SystemInfoTab()
     ESPUI.addControl(ControlType::Label, "Build", "Build: " + String(__DATE__ " " __TIME__), ControlColor::None, lblSoftware);
 
     auto lblOTA = ESPUI.addControl(ControlType::Label, "OTA Update", "<form method=""POST"" action=""/ota"" enctype=""multipart/form-data""><input type=""file"" name=""data"" /><input type=""submit"" name=""upload"" value=""Upload"" title=""Upload Files""></form>", ControlColor::None, _tab);
-    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, NO_VALUE, ControlColor::None, lblOTA), "background-color: unset; width: 100%;");
+    ESPUI.setElementStyle(lblOTA, "background-color: transparent; width: 100%;");
 
     _btnReboot = ESPUI.addControl(
         ControlType::Button, "Reboot", "Press " + String(_rebootCnt) + " times", Carrot, _tab,
