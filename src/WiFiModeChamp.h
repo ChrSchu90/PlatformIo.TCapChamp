@@ -8,42 +8,44 @@
 #define KEY_WIFI_SETTINGS_SSID "WiFiSsid"           // Preferences value key for the WiFi SSID
 #define KEY_WIFI_SETTINGS_PASSWORD "WiFiPassword"   // Preferences value key for the WiFi Password
 
+/// @brief State of the WiFiModeChamp
 enum class WifiModeChampState
 {
-    // end() => NETWORK_DISABLED
+    // Network handling is disbaled due to missing begin() or by end()
     NETWORK_DISABLED = 0,
-    // NETWORK_DISABLED => NETWORK_ENABLED
+    // Network handling is enabled by begin()
     NETWORK_ENABLED,
-
-    // NETWORK_ENABLED => NETWORK_CONNECTING
+    // Starting network connection
     NETWORK_CONNECTING,
-    // NETWORK_CONNECTING => NETWORK_TIMEOUT
+    // Network connection has timed out
     NETWORK_TIMEOUT,
-    // NETWORK_CONNECTING => NETWORK_CONNECTED
-    // NETWORK_RECONNECTING => NETWORK_CONNECTED
-    NETWORK_CONNECTED, // final state
-    // NETWORK_CONNECTED => NETWORK_DISCONNECTED
+    // Network is connected
+    NETWORK_CONNECTED,
+    // Network is disconnected
     NETWORK_DISCONNECTED,
-    // NETWORK_DISCONNECTED => NETWORK_RECONNECTING
+    // Reconnecting to network
     NETWORK_RECONNECTING,
-
-    // NETWORK_ENABLED => AP_STARTING
+    // Starting AP mode
     AP_STARTING,
-    // AP AP_STARTING => AP_STARTED
-    AP_STARTED, // final state
+    // AP mode is started
+    AP_STARTED,
 };
 
+/// @brief Mode of the WiFiModeChamp
 enum class WifiModeChampMode
 {
+    // Default value
     None = 0,
-    // wifi ap
+    // Running in AP mode
     AP = 1,
-    // wifi sta
+    // Running in STA mode
     STA = 2
 };
 
+/// @brief WiFi scan request state
 enum class WifiModeChampScanRequestState
 {
+    // Default value
     None = 0,
     // Request has been made
     Requested = 1,
@@ -64,7 +66,7 @@ public:
 
     static int8_t wifiSignalQuality(int32_t rssi);
 
-    /// @brief 
+    /// @brief
     /// @param apSSID Optional SSID for the AP mode, falls back to ESP-[SerialNumber]
     /// @param apPassword Optional password for the AP mode, if not defined accassable woithout password
     /// @param hostname Optional hostname, falls back to ESP-[SerialNumber]
@@ -76,35 +78,40 @@ public:
     /// @returns if the credentials could be updated
     bool setWifiCredentials(const String ssid, const String password, bool save = false);
 
-    // loop() method to be called from main loop()
+    /// @brief loop() method to be called from main loop()
     void loop();
 
-    // Stops the network stack
+    /// @brief Stops the network stack
     void end();
 
-    // Listen for network state change
+    /// @brief Listen for network state change
     void listen(WifiModeChampStateCallback callback) { _stateCallback = callback; }
 
+    /// @brief Listen for async WiFi scan results
     void scanCallback(WifiModeChampWifiScanCallback callback) { _scanCallback = callback; }
 
-    // Returns the current network state
+    /// @brief Returns the current network state
     WifiModeChampState getState() const { return _state; }
-    // Returns the current network state name
+    /// @brief Returns the current network state name
     const char *getStateName() const;
+    /// @brief Returns the network state name
     const char *getStateName(WifiModeChampState state) const;
 
     /// @brief Gets the default host name
     const String getDefaultHostName();
 
-    // returns the current default mode of the ESP (STA, AP, ETH). ETH has priority over STA if both are connected
+    /// @brief returns the current default mode of the ESP (None, STA or AP).
     WifiModeChampMode getMode() const;
 
+    /// @brief Gets if the ESP is connected to the WiFi
     inline bool isConnected() const { return getIPAddress()[0] != 0; }
 
+    /// @brief Returns the MAC address of the ESP with respect to the current mode
     inline const String getMACAddress() const { return getMACAddress(getMode()); }
+    /// @brief Returns the MAC address of the ESP
     const String getMACAddress(WifiModeChampMode mode) const;
 
-    // Returns the IP address of the WiFi, or IP address of the AP, or empty if not available
+    /// @brief Returns the IP address of the WiFi, or IP address of the AP, or empty if not available
     inline const IPAddress getIPAddress() const { return getIPAddress(getMode()); }
     const IPAddress getIPAddress(WifiModeChampMode mode) const;
 
@@ -121,7 +128,6 @@ public:
     void scanWifiNetworks() { _scanRequestState = WifiModeChampScanRequestState::Requested; }
     /// @brief Gets if there is a WiFi scan pending
     bool getWifiScanPending() { return _scanRequestState == WifiModeChampScanRequestState::Completed; }
-
 
     /// @brief Gets the hostname passed from begin()
     const String &getHostname() const { return _hostname; }
@@ -141,7 +147,7 @@ public:
     /// @brief Maximum duration in seconds that the a reconnect will be pending before switching to AP mode
     void setReconnectTimeout(uint32_t timeout) { _reconnectTimeout = std::max(timeout, (uint32_t)10); }
 
-    // Maximum duration in seconds that the ESP will try to connect to the WiFi before giving up and start the AP mode
+    /// @brief Maximum duration in seconds that the ESP will try to connect to the WiFi before giving up and start the AP mode
     uint32_t getConnectTimeout() const { return _connectTimeout; }
     /// @brief Maximum in seconds duration that the ESP will try to connect to the WiFi before giving up and start the AP mode
     void setConnectTimeout(uint32_t timeout) { _connectTimeout = std::max(timeout, (uint32_t)5); }
@@ -159,42 +165,49 @@ public:
     void clearConfiguration();
 
 private:
-    WifiModeChampState _state = WifiModeChampState::NETWORK_DISABLED;
-    WifiModeChampStateCallback _stateCallback = nullptr;
-    WifiModeChampWifiScanCallback _scanCallback = nullptr;
-    DNSServer *_dnsServer = nullptr;
-    int64_t _lastTime = -1;
-    String _hostname = "";
-    String _apSSID = emptyString;
-    String _apPassword = emptyString;
-    String _wifiSsid = emptyString;         // SSID for STA connection
-    String _wifiPassword = emptyString;     // Password for STA connection
-    uint32_t _connectTimeout = 20;
-    uint32_t _reconnectTimeout = 180;
-    int64_t _lastReconnectTime = -1;
-    uint32_t _waitBetweenWifiScans = 20;
-    uint32_t _timeoutWifiScan = 10;
-    int64_t _lastScanCompleted = -1;
-    int64_t _lastScanStarted = -1;
-    WifiModeChampScanRequestState _scanRequestState = WifiModeChampScanRequestState::None;
-    WiFiEventId_t _wifiEventListenerId = 0;
+    WifiModeChampState _state = WifiModeChampState::NETWORK_DISABLED;                      // Current state
+    WifiModeChampStateCallback _stateCallback = nullptr;                                   // Callback for state changes
+    WifiModeChampWifiScanCallback _scanCallback = nullptr;                                 // Callback for WiFi scan completed
+    DNSServer *_dnsServer = nullptr;                                                       // DNS server for AP mode
+    int64_t _lastTime = -1;                                                                // Timestamp for async timeout detection
+    String _hostname = "";                                                                 // Device host name
+    String _apSSID = emptyString;                                                          // SSID for AP mode
+    String _apPassword = emptyString;                                                      // Optional password for AP mode (needs to be at least 8 chars long)
+    String _wifiSsid = emptyString;                                                        // SSID for STA connection
+    String _wifiPassword = emptyString;                                                    // Password for STA connection
+    uint32_t _connectTimeout = 20;                                                         // Timeout for connect [seconds]
+    uint32_t _reconnectTimeout = 180;                                                      // Timeout for re-connect, if elapsed switch to AP mode [seconds]
+    int64_t _lastReconnectTime = -1;                                                       // Millis since last reconnect
+    uint32_t _waitBetweenWifiScans = 20;                                                   // Wait time between automatic WiFi scans for reconnect check in AP mode [seconds]
+    uint32_t _timeoutWifiScan = 10;                                                        // Timeout for WiFi scans [seconds]
+    int64_t _lastScanCompleted = -1;                                                       // Millis since last WiFi scan has been completed
+    int64_t _lastScanStarted = -1;                                                         // Missis since last WiFi scan has been started
+    WifiModeChampScanRequestState _scanRequestState = WifiModeChampScanRequestState::None; // Scan request state
+    WiFiEventId_t _wifiEventListenerId = 0;                                                // Event handler ID for WiFi state callbacks
 
 private:
-    void _setState(WifiModeChampState state);
-    void _startSTA();
-    void _startAP();
-    void _stopAP();
-    void _onWiFiEvent(WiFiEvent_t event);
-    bool _durationPassed(uint32_t intervalSec);
-
+    /// @brief Updates the current state
+    void setState(WifiModeChampState state);
+    /// @brief Switch to WiFi client mode
+    void startSTA();
+    /// @brief Switch to AP mode
+    void startAP();
+    /// @brief Stop AP mode
+    void stopAP();
+    /// @brief WiFi event handler to detect disconnects etc.
+    void onWiFiEvent(WiFiEvent_t event);
+    /// @brief Check if timeout has elapsed by using _lastTime
+    bool durationPassed(uint32_t intervalSec);
+    /// @brief Reset the reconnect timeout
     void resetReconnectTimeout() { _lastReconnectTime = millis(); }
+    /// @brief Check if reconnect timeout has elapsed
     bool reconnectTimeoutElapsed();
-
-    /// @brief Scan available WiFi networks
-    /// @return the amount of WiFi networks that has been found
+    /// @brief Scan available WiFi networks and return the amount of WiFi networks that has been found
     int16_t scanWifiNetworks(bool ignoreWaitTime);
+    /// @brief Clear the WiFi scan result to release the used memory
     void clearWifiScanResult();
-    void startWifiScan();    
+    /// @brief Starts a async WiFi scan
+    void startWifiScan();
 };
 
 extern WifiModeChampClass WifiModeChamp;
