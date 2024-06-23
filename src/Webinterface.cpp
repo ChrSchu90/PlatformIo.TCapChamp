@@ -158,7 +158,7 @@ SystemInfoTab::SystemInfoTab()
     ESPUI.addControl(ControlType::Label, "SDK", "SDK Verison: " + String(ESP.getSdkVersion()), ControlColor::None, lblSoftware);
     ESPUI.addControl(ControlType::Label, "Build", "Build: " + String(__DATE__ " " __TIME__), ControlColor::None, lblSoftware);
 
-    auto lblOTA = ESPUI.addControl(ControlType::Label, "OTA Update", "<form method=""POST"" action=""/ota"" enctype=""multipart/form-data""><input type=""file"" name=""data"" /><input type=""submit"" name=""upload"" value=""Upload"" title=""Upload Files""></form>", ControlColor::None, _tab);
+    auto lblOTA = ESPUI.addControl(ControlType::Label, "OTA Update", "<form method=""POST"" action=""/ota"" enctype=""multipart/form-data""><input type=""file"" name=""data"" style=""color:white;background-color:#999"" /><input type=""submit"" name=""upload"" value=""Upload"" title=""Upload Files"" style=""color:white;background-color:#999;width:100px;height:35px""></form>", ControlColor::None, _tab);
     ESPUI.setElementStyle(lblOTA, "background-color: transparent; width: 100%;");
 
     _btnReboot = ESPUI.addControl(
