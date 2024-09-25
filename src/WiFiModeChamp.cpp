@@ -233,7 +233,7 @@ bool WifiModeChampClass::setWifiCredentials(const String ssid, const String pass
 
     _wifiSsid = ssid;
     _wifiPassword = password;
-    if (_wifiPassword.isEmpty() && _wifiPassword.length() < 8)
+    if (!_wifiPassword.isEmpty() && _wifiPassword.length() < 8)
     {
 #ifdef LOG_ERROR
         LOG_ERROR(F("WiFiModeChamp"), F("setWifiCredentials"), F("Password is invalid!"));
