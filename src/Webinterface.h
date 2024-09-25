@@ -2,6 +2,13 @@
 
 #include "Config.h"
 
+#define STYLE_HIDDEN "background-color: unset; width: 0px; height: 0px; display: none;"
+#define STYLE_NUM_TEMP_ADJUST_NORMAL "width: 15%; color: black; background: rgba(255,255,255,0.8);"
+#define STYLE_SWITCH_POWER_ADJUST "vertical-align: middle; margin-right: 25px; margin-bottom: 3px; width: 12.5%;"
+#define STYLE_NUM_POWER_ADJUST_NORMAL "width: 15%; color: black; background: rgba(255,255,255,0.8);"
+#define STYLE_NUM_POWER_ADJUST_ERROR "width: 15%; color: black; background: rgba(231,76,60,0.8);"
+#define STYLE_NUM_POWER_ADJUST_DISABLED "width: 15%; color: black; background: rgba(153,153,153,0.8);"
+
 static const char * NO_VALUE = "";                                      // Empty string for no value
 static const String MAX_TEMPERATURE_VALUE = String(MAX_TEMPERATURE);    // Maximum supported temperature value
 static const String MIN_TEMPERATURE_VALUE = String(MIN_TEMPERATURE);    // Minimum supported temperature value
@@ -42,8 +49,8 @@ public:
 class TemperatureTab
 {
 private:
-    TemperatureAreaTab *_areas[TEMP_AREA_AMOUNT];
     TemperatureConfig *_config;
+    uint16_t _adjustments[TEMP_ADJUST_AMOUNT];
     uint16_t _tab;
     uint16_t _swManualMode;
     uint16_t _sldManualTemp;
@@ -64,31 +71,6 @@ public:
     void updateStatus();
 };
 
-/// @brief Web UI temperature element that represents a teperature area
-class TemperatureAreaTab
-{
-private:
-    TemperatureTab *_tab;
-    TemperatureArea *_config;
-    uint16_t _swEnabled;
-    uint16_t _sldStart;
-    uint16_t _sldEnd;
-    uint16_t _sldOffset;
-
-protected:
-public:
-    /// @brief Creates a new tab for the temperature area configuration inside the Web interface
-    /// @param tab the parent temperature tab
-    /// @param config the temperature area configuration
-    TemperatureAreaTab(TemperatureTab *tab, TemperatureArea *config);
-
-    /// @brief Forces an update of the UI values
-    void update();
-
-    /// @brief Foreces an update of the status indicator to make a invalid configuration visible
-    void updateStatus();
-};
-
 /// @brief Web UI tab to interact with the Power Configuration
 class PowerTab
 {
@@ -96,6 +78,7 @@ private:
     PowerAreaTab *_areas[POWER_AREA_AMOUNT];
     PowerConfig *_config;
     uint16_t _tab;
+    uint16_t _lblPwrAdjustment;
     uint16_t _swManualMode;
     uint16_t _sldManualPower;
 
@@ -107,6 +90,9 @@ public:
 
     /// @brief Gets the ID of the UI Tab
     uint16_t getTabId() { return _tab; };
+
+    /// @brief Gets the ID of the UI Lable for power adjustments
+    uint16_t getPwrAdjustId() { return _lblPwrAdjustment; };
 
     /// @brief Forces an update of the UI values
     void update();
@@ -122,9 +108,9 @@ private:
     PowerTab *_tab;
     PowerArea *_config;
     uint16_t _swEnabled;
-    uint16_t _sldStart;
-    uint16_t _sldEnd;
-    uint16_t _sldPowerLimit;
+    uint16_t _numStart;
+    uint16_t _numEnd;
+    uint16_t _numLimit;
 
 protected:
 public:

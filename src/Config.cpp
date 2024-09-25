@@ -28,9 +28,9 @@ TemperatureConfig::TemperatureConfig(Preferences *preferences) : _preferences(pr
     _manualMode = preferences->getBool(KEY_SETTING_TEMP_MANUAL_MODE, false);
     _manualTemperature = preferences->getChar(KEY_SETTING_TEMP_MANUAL_TEMP, 15);
 
-    for (size_t i = 0; i < TEMP_AREA_AMOUNT; i++)
+    for (size_t i = 0; i < TEMP_ADJUST_AMOUNT; i++)
     {
-        _areas[i] = new TemperatureArea(i, this, preferences);
+        _adjustments[i] = new TemperatureAdjustment(ADJUST_TEMP_START - i, preferences);
     }
 };
 
@@ -70,28 +70,49 @@ float TemperatureConfig::getOutputTemperature(float inputTemp)
         return inputTemp;
     }
 
-    auto area = getArea(inputTemp);
-    if (area != nullptr)
+    if(inputTemp > ADJUST_TEMP_START)
     {
-        return inputTemp + area->getOffset();
+        return ADJUST_TEMP_START;
+    }
+
+    if(inputTemp < ADJUST_TEMP_END)
+    {
+        return ADJUST_TEMP_END;
+    }
+
+    int8_t upperIn = ceil(inputTemp); 
+    int8_t lowerIn = floor(inputTemp);
+    if(upperIn == lowerIn)
+    {
+        auto adj = getTempAdjustment(upperIn);
+        if(adj != nullptr)
+        {
+            return adj->getTemperatureAdjusted();
+        }
+    }
+
+    auto adjUpper = getTempAdjustment(upperIn);
+    auto adjLower = getTempAdjustment(lowerIn);
+    if(adjUpper != nullptr && adjLower != nullptr)
+    {
+        auto upperOut = adjUpper->getTemperatureAdjusted();
+        auto lowerOut = adjLower->getTemperatureAdjusted();
+
+        // Linear interpolation
+        return lowerOut + (upperOut - lowerOut) / (upperIn - lowerIn) * (inputTemp - lowerIn);
     }
 
     return inputTemp;
 }
 
-TemperatureArea *TemperatureConfig::getArea(float temperature)
+TemperatureAdjustment *TemperatureConfig::getTempAdjustment(int8_t tempReal)
 {
-    if (isnanf(temperature))
+    for (size_t i = 0; i < TEMP_ADJUST_AMOUNT; i++)
     {
-        return nullptr;
-    }
-
-    for (size_t i = 0; i < TEMP_AREA_AMOUNT; i++)
-    {
-        auto area = getArea(i);
-        if (area->isResponsable(temperature))
+        auto adjustment = getAdjustment(i);
+        if(adjustment->tempReal == tempReal)
         {
-            return area;
+            return adjustment;
         }
     }
 
@@ -100,82 +121,35 @@ TemperatureArea *TemperatureConfig::getArea(float temperature)
 
 /*
 ##############################################
-##             TemperatureArea              ##
+##          TemperatureAdjustment           ##
 ##############################################
 */
 
-TemperatureArea::TemperatureArea(size_t index, TemperatureConfig *config, Preferences *preferences) : index(index), name("Area " + String(index + 1)), _config(config), _preferences(preferences)
+TemperatureAdjustment::TemperatureAdjustment(int8_t tempReal, Preferences *preferences) : _preferences(preferences), tempReal(tempReal)
 {
-    _enabled = preferences->getBool(KEY_SETTING_TEMP_AREA_ENABLED + index, false);
-    _start = preferences->getChar(KEY_SETTING_TEMP_AREA_START + index, 0);
-    _end = preferences->getChar(KEY_SETTING_TEMP_AREA_END + index, 0);
-    _offset = preferences->getChar(KEY_SETTING_TEMP_AREA_OFFSET + index, 0);
+    _tempAdjusted = preferences->getChar(KEY_SETTING_TEMP_ADJUST_TEMP + tempReal, tempReal);
+
+    Serial.println("Read tempReal=" + String(tempReal) + " Adjusted=" + String(_tempAdjusted));
 };
 
-bool TemperatureArea::setEnabled(bool enabled)
+int8_t TemperatureAdjustment::setTemperatureAdjusted(int8_t temperature)
 {
-    if (enabled == _enabled)
+    temperature = min(max(temperature, (int8_t)(tempReal - ADJUST_TEMP_MAX_OFSET)), (int8_t)(tempReal + ADJUST_TEMP_MAX_OFSET));
+    temperature = min(max(temperature, (int8_t)MIN_TEMPERATURE), (int8_t)MAX_TEMPERATURE);
+
+    if (temperature == _tempAdjusted)
     {
-        return _enabled;
+        return _tempAdjusted;
     }
 
-    _enabled = enabled;
-    _preferences->putBool(KEY_SETTING_TEMP_AREA_ENABLED + index, _enabled);
-    return _enabled;
-}
-
-int8_t TemperatureArea::setStart(int8_t start)
-{
-    start = min(max(start, (int8_t)MIN_TEMPERATURE), (int8_t)MAX_TEMPERATURE);
-    if (start == _start)
-    {
-        return _start;
-    }
-
-    _start = start;
-    _preferences->putChar(KEY_SETTING_TEMP_AREA_START + index, _start);
-    return _start;
-}
-
-int8_t TemperatureArea::setEnd(int8_t end)
-{
-    end = min(max(end, (int8_t)MIN_TEMPERATURE), (int8_t)MAX_TEMPERATURE);
-    if (end == _end)
-    {
-        return _end;
-    }
-
-    _end = end;
-    _preferences->putChar(KEY_SETTING_TEMP_AREA_END + index, _end);
-    return _end;
-}
-
-int8_t TemperatureArea::setOffset(int8_t offset)
-{
-    offset = min(max(offset, (int8_t)MIN_TEMPERATURE), (int8_t)20);
-    if (offset == _offset)
-    {
-        return _offset;
-    }
-
-    _offset = offset;
-    _preferences->putChar(KEY_SETTING_TEMP_AREA_OFFSET + index, _offset);
-    return _offset;
-}
-
-bool TemperatureArea::isResponsable(float temperature)
-{
-    return !isnanf(temperature) && _enabled && isValid() && temperature >= _start && temperature <= _end;
-}
-
-bool TemperatureArea::isValid()
-{
-    return _start <= _end && _end >= _start;
-}
+    _tempAdjusted = temperature;
+    _preferences->putChar(KEY_SETTING_TEMP_ADJUST_TEMP + tempReal, _tempAdjusted);
+    return _tempAdjusted;
+};
 
 /*
 ##############################################
-##            PowerConfig             ##
+##            PowerConfig                   ##
 ##############################################
 */
 
@@ -257,7 +231,7 @@ PowerArea *PowerConfig::getArea(float temperature)
 
 /*
 ##############################################
-##             PowerArea              ##
+##             PowerArea                    ##
 ##############################################
 */
 
@@ -309,6 +283,7 @@ int8_t PowerArea::setEnd(int8_t end)
 
 uint8_t PowerArea::setPowerLimit(uint8_t powerLimit)
 {
+    powerLimit = ((uint8_t)round((powerLimit + (uint8_t)(STEP_POWER_LIMIT / 2)) / STEP_POWER_LIMIT)) * STEP_POWER_LIMIT;
     powerLimit = min(max(powerLimit, (uint8_t)MIN_POWER_LIMIT), (uint8_t)MAX_POWER_LIMIT);
     if (powerLimit == _powerLimit)
     {
@@ -316,7 +291,7 @@ uint8_t PowerArea::setPowerLimit(uint8_t powerLimit)
     }
 
     _powerLimit = powerLimit;
-    _preferences->putChar(KEY_SETTING_POWER_AREA_LIMIT + index, _powerLimit);
+    _preferences->putUChar(KEY_SETTING_POWER_AREA_LIMIT + index, _powerLimit);
     return _powerLimit;
 }
 
