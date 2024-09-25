@@ -310,20 +310,6 @@ PowerAreaTab::PowerAreaTab(PowerTab *tab, PowerArea *config) : _tab(tab), _confi
         this);
     ESPUI.setElementStyle(_swEnabled, STYLE_SWITCH_POWER_ADJUST);
     
-    _numStart = ESPUI.addControl(
-        ControlType::Number, NO_VALUE, String(config->getStart()), ControlColor::None, tab->getPwrAdjustId(),
-        [](Control *sender, int type, void *UserInfo)
-        {
-            PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
-            if(sender->value.isEmpty())
-                ESPUI.updateNumber(sender->id, instance->_config->getStart());
-            else
-                ESPUI.updateNumber(sender->id, instance->_config->setStart(sender->value.toInt()));
-            instance->updateStatus();
-        },
-        this);
-    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "°C  - ", ControlColor::None, tab->getPwrAdjustId()), "background-color: unset; text-align: left; width: 10%;");
-    
     _numEnd = ESPUI.addControl(
         ControlType::Number, NO_VALUE, String(config->getEnd()), ControlColor::None, tab->getPwrAdjustId(),
         [](Control *sender, int type, void *UserInfo)
@@ -333,6 +319,20 @@ PowerAreaTab::PowerAreaTab(PowerTab *tab, PowerArea *config) : _tab(tab), _confi
                 ESPUI.updateNumber(sender->id, instance->_config->getEnd());
             else
                 ESPUI.updateNumber(sender->id, instance->_config->setEnd(sender->value.toInt()));
+            instance->updateStatus();
+        },
+        this);
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "°C  - ", ControlColor::None, tab->getPwrAdjustId()), "background-color: unset; text-align: left; width: 10%;");
+        
+    _numStart = ESPUI.addControl(
+        ControlType::Number, NO_VALUE, String(config->getStart()), ControlColor::None, tab->getPwrAdjustId(),
+        [](Control *sender, int type, void *UserInfo)
+        {
+            PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
+            if(sender->value.isEmpty())
+                ESPUI.updateNumber(sender->id, instance->_config->getStart());
+            else
+                ESPUI.updateNumber(sender->id, instance->_config->setStart(sender->value.toInt()));
             instance->updateStatus();
         },
         this);
