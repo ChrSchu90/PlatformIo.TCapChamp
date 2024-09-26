@@ -11,20 +11,31 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 
 [Service Manual T-Cap (PDF)](https://www.kaelte-bast.de/dateien_neu13/Panasonic/01-produktunterlagen/aquarea/produkte/waermepumpen/t-cap/sqc/handbuch_englisch/sm_wh-sqc09h3e8%2Cwh-sqc12.16h9e8_%28papamy1704053ce%29.pdf)
 
+## Features
+| Feature                                          | Completed |
+| ------------------------------------------------ | --------- |
+| Automatic switch between WiFi AP and Client mode | &#10003;  |
+| Hardware sensor for input temperature            | &#10003;  |
+| Weather API for input temperature                | &#10003;  |
+| 0V-10V Demand control                            | &#10003;  |
+| OTA Updates                                      | &#10003;  |
+| Custom webinterface for better accessibility     | &#10007;  |
+
+
 ## Bill of Material & Tools
 | Name                                                       | Required | Description                                                                   |
 | ---------------------------------------------------------- | -------- | ----------------------------------------------------------------------------- |
-| [ESP32 NodeMCU-32S](https://www.amazon.de/dp/B0CQSWC67G)   | [x]      | Microcontroller                                                               |
-| [MCP4151-503E/P](https://agelektronik.de/digital-potentiometer/6459-mcp4151-503ep-digital-potentiometer50k256-steps1-kanalspidip-8.html)   | [x]      | Digital Potentiometer 50K, 256 steps, SPI   |
-| [Electrical wire](https://www.amazon.de/dp/B08BZKR22W)     | [x]      |                                                                               |
-| [Prototype Board](https://www.amazon.de/dp/B08F2TS7ZC)     | [x]      | For final installation                                                        |
-| 10k resistor                                               | [x]      | Voltage devider for input sensor                                              |
-| 5k resistor                                                | [x]      | Pre-Resistor for Digital potentiometer (defines the possible output temperature, in my case +30°C to -20°C) |
-| [DFRobot Gravity I2C DAC Module](https://www.dfrobot.com/product-2613.html)      | [ ]      | Optional I2C DAC 0-10V for Demand Control                                                   |
-| [Breadboard Kit](https://www.amazon.de/dp/B0B18G3V5T)      | [ ]      | Prototype Board for testing                                                   |
-| [Connectors](https://www.amazon.de/dp/B087RN8FDZ)          | [ ]      | Connector for wires                                                           |
-| [Socket for ESP](https://www.amazon.de/dp/B07DBY753C)      | [ ]      | Socket for ESP                                                                |
-| [IC Sockets](https://www.amazon.de/dp/B01GOLSUAU)          | [ ]      | IC Socket for MCP4151                                                         |
+| [ESP32 NodeMCU-32S](https://www.amazon.de/dp/B0CQSWC67G)   | &#10003; | Microcontroller                                                               |
+| [MCP4151-503E/P](https://agelektronik.de/digital-potentiometer/6459-mcp4151-503ep-digital-potentiometer50k256-steps1-kanalspidip-8.html)   | &#10003; | Digital Potentiometer 50K, 256 steps, SPI   |
+| [Electrical wire](https://www.amazon.de/dp/B08BZKR22W)     | &#10003; |                                                                               |
+| [Prototype Board](https://www.amazon.de/dp/B08F2TS7ZC)     | &#10003; | For final board                                                               |
+| 10k resistor                                               | &#10003; | Voltage devider for input sensor                                              |
+| 5k resistor                                                | &#10003; | Pre-Resistor for Digital potentiometer (defines the possible output temperature, in my case +30°C to -20°C) |
+| [DFRobot Gravity I2C DAC Module](https://www.dfrobot.com/product-2613.html)      | &#10007; | Optional I2C DAC 0-10V for Demand Control                                                   |
+| [Breadboard Kit](https://www.amazon.de/dp/B0B18G3V5T)      | &#10007; | Prototype Board for testing                                                   |
+| [Connectors](https://www.amazon.de/dp/B087RN8FDZ)          | &#10007; | Connector for wires                                                           |
+| [Socket for ESP](https://www.amazon.de/dp/B07DBY753C)      | &#10007; | Socket for ESP                                                                |
+| [IC Sockets](https://www.amazon.de/dp/B01GOLSUAU)          | &#10007; | IC Socket for MCP4151                                                         |
 
 
 ### Tools
