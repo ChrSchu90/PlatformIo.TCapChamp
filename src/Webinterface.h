@@ -8,6 +8,12 @@
 #define STYLE_NUM_POWER_ADJUST_NORMAL "width: 15%; color: black; background: rgba(255,255,255,0.8);"
 #define STYLE_NUM_POWER_ADJUST_ERROR "width: 15%; color: black; background: rgba(231,76,60,0.8);"
 #define STYLE_NUM_POWER_ADJUST_DISABLED "width: 15%; color: black; background: rgba(153,153,153,0.8);"
+#define STYLE_LBL_ADJUST "background-color: unset; width: 85%; text-align-last: left;"
+#define STYLE_LBL_INOUT "width: 15%;"
+#define STYLE_SWITCH_INOUT "vertical-align: middle; margin-right: 25px; margin-bottom: 3px; width: 12.5%;"
+#define STYLE_NUM_INOUT_MANUAL_INPUT "vertical-align: middle; margin-bottom: 3px; width: 15%; color: black; background: rgba(255,255,255,0.8);"
+#define STYLE_LBL_INOUT_VALUE_OUTPUT "background-color: unset; text-align: left; width: 80%;"
+#define STYLE_SWITCH_INOUT_MANUAL_ENABLE "background-color: unset; text-align: left; width: 62.5%;" 
 
 static const char * NO_VALUE = "";                                      // Empty string for no value
 static const String MAX_TEMPERATURE_VALUE = String(MAX_TEMPERATURE);    // Maximum supported temperature value
@@ -16,7 +22,6 @@ static const String MAX_POWER_LIMIT_VALUE = String(MAX_POWER_LIMIT);    // Maxim
 static const String MIN_POWER_LIMIT_VALUE = String(MIN_POWER_LIMIT);    // Minimum supported power limit valie
 static const String STEP_POWER_LIMIT_VALUE = String("5");               // Slider step power limit value
 
-class TemperatureAreaTab;
 class PowerAreaTab;
 
 /// @brief Implements a system information tab inside the Webinterface
@@ -52,8 +57,6 @@ private:
     TemperatureConfig *_config;
     uint16_t _adjustments[TEMP_ADJUST_AMOUNT];
     uint16_t _tab;
-    uint16_t _swManualMode;
-    uint16_t _sldManualTemp;
 
 protected:
 public:
@@ -79,8 +82,6 @@ private:
     PowerConfig *_config;
     uint16_t _tab;
     uint16_t _lblPwrAdjustment;
-    uint16_t _swManualMode;
-    uint16_t _sldManualPower;
 
 protected:
 public:
@@ -171,17 +172,24 @@ public:
 class Webinterface
 {
 private:
+    Config *_config;
     uint16_t _lblSensorTemp;
     uint16_t _lblWeatherTemp;
-    uint16_t _lblOutputTemp;
-    uint16_t _lblOutputPower;
+    uint16_t _swManualTempInput;
+    uint16_t _swManualTempOutput;
+    uint16_t _swManualPowerOutput;
+    uint16_t _numManualTempInput;
+    uint16_t _numManualTempOutput;
+    uint16_t _numManualPowerOutput;
+    uint16_t _lblTempOutput;
+    uint16_t _lblPowerOutput;
+    TemperatureTab *_temperatureTab;
+    PowerTab *_powerTab;
+    SystemInfoTab *_systemInfoTab;
+    WifiInfoTab *_wifiInfoTab;
 
 protected:
 public:
-    TemperatureTab *temperatureTab;
-    PowerTab *powerTab;
-    SystemInfoTab *systemInfoTab;
-    WifiInfoTab *wifiInfoTab;
 
     /// @brief Creates the web UI instance
     /// @param port the webinterface port
@@ -205,3 +213,4 @@ public:
     /// @param powerLimit the new power limit [%]
     void setOuputPowerLimit(const float powerLimit);
 };
+

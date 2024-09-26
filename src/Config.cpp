@@ -25,8 +25,12 @@ Config::Config() : _preferences(new Preferences())
 
 TemperatureConfig::TemperatureConfig(Preferences *preferences) : _preferences(preferences)
 {
-    _manualMode = preferences->getBool(KEY_SETTING_TEMP_MANUAL_MODE, false);
-    _manualTemperature = preferences->getChar(KEY_SETTING_TEMP_MANUAL_TEMP, 15);
+    // Check limit and round to 0.1
+    _manualOutputActive = preferences->getBool(KEY_SETTING_TEMP_MANUAL_OUT_MODE, false);
+    _manualOutputTemperature = preferences->getFloat(KEY_SETTING_TEMP_MANUAL_OUT_TEMP, 15.0f);
+
+    _manualInputActive = preferences->getBool(KEY_SETTING_TEMP_MANUAL_IN_MODE, false);
+    _manualInputTemperature = preferences->getFloat(KEY_SETTING_TEMP_MANUAL_IN_TEMP, 15.0f);
 
     for (size_t i = 0; i < TEMP_ADJUST_AMOUNT; i++)
     {
@@ -34,35 +38,67 @@ TemperatureConfig::TemperatureConfig(Preferences *preferences) : _preferences(pr
     }
 };
 
-bool TemperatureConfig::setManualMode(bool manualMode)
+bool TemperatureConfig::setManualOutputActive(bool manualMode)
 {
-    if (_manualMode == manualMode)
+    if (_manualOutputActive == manualMode)
     {
-        return _manualMode;
+        return _manualOutputActive;
     }
 
-    _manualMode = manualMode;
-    _preferences->putBool(KEY_SETTING_TEMP_MANUAL_MODE, _manualMode);
-    return _manualMode;
+    _manualOutputActive = manualMode;
+    _preferences->putBool(KEY_SETTING_TEMP_MANUAL_OUT_MODE, _manualOutputActive);
+    return _manualOutputActive;
 }
 
-int8_t TemperatureConfig::setManualTemperature(int8_t manualTemperature)
+bool TemperatureConfig::setManualInputActive(bool manualMode)
 {
-    if (_manualTemperature == manualTemperature)
+    if (_manualInputActive == manualMode)
     {
-        return _manualTemperature;
+        return _manualInputActive;
     }
 
-    _manualTemperature = manualTemperature;
-    _preferences->putChar(KEY_SETTING_TEMP_MANUAL_TEMP, _manualTemperature);
-    return _manualTemperature;
+    _manualInputActive = manualMode;
+    _preferences->putBool(KEY_SETTING_TEMP_MANUAL_IN_MODE, _manualInputActive);
+    return _manualInputActive;
+}
+
+float TemperatureConfig::setManualOutputTemperature(float manualTemperature)
+{
+    // Check limit and round to 0.1
+    manualTemperature = min(max(manualTemperature, (float)MIN_TEMPERATURE), (float)MAX_TEMPERATURE);
+    manualTemperature = roundf(manualTemperature * 10) / 10;
+    
+    if (_manualOutputTemperature == manualTemperature)
+    {
+        return _manualOutputTemperature;
+    }
+
+    _manualOutputTemperature = manualTemperature;
+    _preferences->putFloat(KEY_SETTING_TEMP_MANUAL_OUT_TEMP, _manualOutputTemperature);
+    return _manualOutputTemperature;
+}
+
+float TemperatureConfig::setManualInputTemperature(float manualTemperature)
+{
+    // Check limit and round to 0.1
+    manualTemperature = min(max(manualTemperature, (float)MIN_TEMPERATURE), (float)MAX_TEMPERATURE);
+    manualTemperature = roundf(manualTemperature * 10) / 10;
+
+    if (_manualInputTemperature == manualTemperature)
+    {
+        return _manualInputTemperature;
+    }
+
+    _manualInputTemperature = manualTemperature;
+    _preferences->putFloat(KEY_SETTING_TEMP_MANUAL_IN_TEMP, _manualInputTemperature);
+    return _manualInputTemperature;
 }
 
 float TemperatureConfig::getOutputTemperature(float inputTemp)
 {
-    if (_manualMode)
+    if (_manualOutputActive)
     {
-        return _manualTemperature;
+        return _manualOutputTemperature;
     }
 
     if (isnanf(inputTemp))
@@ -128,8 +164,6 @@ TemperatureAdjustment *TemperatureConfig::getTempAdjustment(int8_t tempReal)
 TemperatureAdjustment::TemperatureAdjustment(int8_t tempReal, Preferences *preferences) : _preferences(preferences), tempReal(tempReal)
 {
     _tempAdjusted = preferences->getChar(KEY_SETTING_TEMP_ADJUST_TEMP + tempReal, tempReal);
-
-    Serial.println("Read tempReal=" + String(tempReal) + " Adjusted=" + String(_tempAdjusted));
 };
 
 int8_t TemperatureAdjustment::setTemperatureAdjusted(int8_t temperature)
@@ -155,7 +189,7 @@ int8_t TemperatureAdjustment::setTemperatureAdjusted(int8_t temperature)
 
 PowerConfig::PowerConfig(Preferences *preferences) : _preferences(preferences)
 {
-    _manualMode = preferences->getBool(KEY_SETTING_POWER_MANUAL_MODE, false);
+    _manualOutputActive = preferences->getBool(KEY_SETTING_POWER_MANUAL_MODE, false);
     _manualPower = preferences->getUChar(KEY_SETTING_POWER_MANUAL_POWER, 100);
 
     for (size_t i = 0; i < POWER_AREA_AMOUNT; i++)
@@ -164,16 +198,16 @@ PowerConfig::PowerConfig(Preferences *preferences) : _preferences(preferences)
     }
 };
 
-bool PowerConfig::setManualMode(bool manualMode)
+bool PowerConfig::setManualOutputActive(bool manualMode)
 {
-    if (_manualMode == manualMode)
+    if (_manualOutputActive == manualMode)
     {
-        return _manualMode;
+        return _manualOutputActive;
     }
 
-    _manualMode = manualMode;
-    _preferences->putBool(KEY_SETTING_POWER_MANUAL_MODE, _manualMode);
-    return _manualMode;
+    _manualOutputActive = manualMode;
+    _preferences->putBool(KEY_SETTING_POWER_MANUAL_MODE, _manualOutputActive);
+    return _manualOutputActive;
 }
 
 uint8_t PowerConfig::setManualPower(uint8_t manualPower)
@@ -191,7 +225,7 @@ uint8_t PowerConfig::setManualPower(uint8_t manualPower)
 
 uint8_t PowerConfig::getOutputPowerLimit(float inputTemp)
 {
-    if (_manualMode)
+    if (_manualOutputActive)
     {
         return _manualPower;
     }

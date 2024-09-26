@@ -263,9 +263,9 @@ void setupWeatherApi()
 float getInputTemperature()
 {
 	// Use manual temperature as highest priority
-	if (_config && _config->temperatureConfig->isManualMode())
+	if (_config && _config->temperatureConfig->isManualInputTemp())
 	{
-		return _config->temperatureConfig->getManualTemperature();
+		return _config->temperatureConfig->getManualInputTemperature();
 	}
 
 	// Prefer weather API
@@ -283,7 +283,7 @@ float getInputTemperature()
 	// Use the manual temperature as fallback if no API or input sensor value is available
 	if (_config)
 	{
-		return _config->temperatureConfig->getManualTemperature();
+		return _config->temperatureConfig->getManualOutputTemperature();
 	}
 
 	// It is not possible to determine a input temperature
@@ -425,7 +425,7 @@ void setupPowerLimit()
 #ifdef LOG_DEBUG
 		LOG_DEBUG(F("Main"), F("setupPowerLimit"), F("Successful init 0-10V output via I2C"));
 #endif
-		setPowerLimit(_powerLimitPercent, true); // initially set to 0% ()
+		setPowerLimit(_powerLimitPercent, true); // initially set to 0% (disable power limit)
 		_timers.every(
 			POWER_OUT_UPDATE_CYCLE,
 			[](void *opaque) -> bool

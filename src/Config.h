@@ -2,15 +2,17 @@
 
 #include <Preferences.h>
 
-#define MIN_TEMPERATURE -20                         // Minimum supported temperature in °C
-#define MAX_TEMPERATURE 30                          // Maximum supported temperature in °C
-#define ADJUST_TEMP_START 21                        // Start of adjustment temperatures in °C
-#define ADJUST_TEMP_END -15                         // End of adjustment temperatures in °C
-#define ADJUST_TEMP_MAX_OFSET 10                    // Maximum offset adjustment temperature in °C
-#define KEY_SETTINGS_NAMESPACE "TCapChamp"          // Preferences namespance key (limited to 15 chars)
-#define KEY_SETTING_TEMP_MANUAL_MODE "TempManual"   // Preferences key for manual temperature mode (limited to 15 chars)
-#define KEY_SETTING_TEMP_MANUAL_TEMP "ManualTemp"   // Preferences key for manual temperature (limited to 15 chars)
-#define KEY_SETTING_TEMP_ADJUST_TEMP "AdjustTemp"   // Preferences key for manual temperature NOTE: WITHOUT INDEX (limited to 15 chars)
+#define MIN_TEMPERATURE -20                                 // Minimum supported temperature in °C
+#define MAX_TEMPERATURE 30                                  // Maximum supported temperature in °C
+#define ADJUST_TEMP_START 21                                // Start of adjustment temperatures in °C
+#define ADJUST_TEMP_END -15                                 // End of adjustment temperatures in °C
+#define ADJUST_TEMP_MAX_OFSET 10                            // Maximum offset adjustment temperature in °C
+#define KEY_SETTINGS_NAMESPACE "TCapChamp"                  // Preferences namespance key (limited to 15 chars)
+#define KEY_SETTING_TEMP_MANUAL_OUT_MODE "TempOutManual"    // Preferences key for manual output temperature mode (limited to 15 chars)
+#define KEY_SETTING_TEMP_MANUAL_OUT_TEMP "ManualOutTemp"    // Preferences key for manual output temperature (limited to 15 chars)
+#define KEY_SETTING_TEMP_MANUAL_IN_MODE "TempInManual"      // Preferences key for manual input temperature mode (limited to 15 chars)
+#define KEY_SETTING_TEMP_MANUAL_IN_TEMP "ManualInTemp"      // Preferences key for manual input temperature (limited to 15 chars)
+#define KEY_SETTING_TEMP_ADJUST_TEMP "AdjustTemp"           // Preferences key for manual temperature NOTE: WITHOUT INDEX (limited to 15 chars)
 
 #define MIN_POWER_LIMIT 0                             // Minimum supported power limit in %
 #define MAX_POWER_LIMIT 100                           // Maximum supported power limit in %
@@ -59,8 +61,10 @@ class TemperatureConfig
 private:
     TemperatureAdjustment *_adjustments[TEMP_ADJUST_AMOUNT];
     Preferences *_preferences;
-    bool _manualMode;
-    int8_t _manualTemperature;
+    bool _manualOutputActive;
+    bool _manualInputActive;
+    float _manualOutputTemperature;
+    float _manualInputTemperature;
 
 protected:
 public:
@@ -68,21 +72,37 @@ public:
     /// @param preferences the app preferences to stroe the configuration
     TemperatureConfig(Preferences *preferences);
 
-    /// @brief Gets if the manual mode is active
-    bool isManualMode() { return _manualMode; };
+    /// @brief Gets if the manual output temperature is active
+    bool isManualOutputTemp() { return _manualOutputActive; };
 
-    /// @brief Sets if the manual mode is active
+    /// @brief Gets if the manual input temperature is active
+    bool isManualInputTemp() { return _manualInputActive; };
+
+    /// @brief Sets if the manual output temperature is active
     /// @param manualMode manual mode enabled/disabled
     /// @return the new value after limit check
-    bool setManualMode(bool manualMode);
+    bool setManualOutputActive(bool manualMode);
 
-    /// @brief Gets the manual temperature
-    int8_t getManualTemperature() { return _manualTemperature; };
+    /// @brief Sets if the manual input temperature is active
+    /// @param manualMode manual mode enabled/disabled
+    /// @return the new value after limit check
+    bool setManualInputActive(bool manualMode);
 
-    /// @brief Sets if the manual temperature
+    /// @brief Gets the manual output temperature
+    float getManualOutputTemperature() { return _manualOutputTemperature; };
+
+    /// @brief Gets the manual input temperature
+    float getManualInputTemperature() { return _manualInputTemperature; };
+
+    /// @brief Sets the manual output temperature
     /// @param manualTemperature manual temperature
     /// @return the new value after limit check
-    int8_t setManualTemperature(int8_t manualTemperature);
+    float setManualOutputTemperature(float manualTemperature);
+
+    /// @brief Sets the manual input temperature
+    /// @param manualTemperature manual temperature
+    /// @return the new value after limit check
+    float setManualInputTemperature(float manualTemperature);
 
     /// @brief Gets the temperature adjustment by the index
     /// @param index adjustment index or nullptr if out of index
@@ -104,7 +124,7 @@ class PowerConfig
 private:
     PowerArea *_areas[POWER_AREA_AMOUNT];
     Preferences *_preferences;
-    bool _manualMode;
+    bool _manualOutputActive;
     uint8_t _manualPower;
 
 protected:
@@ -114,12 +134,12 @@ public:
     PowerConfig(Preferences *preferences);
 
     /// @brief Gets if the manual mode is active
-    bool isManualMode() { return _manualMode; };
+    bool isManualOutputPower() { return _manualOutputActive; };
 
     /// @brief Sets if the manual mode is active
     /// @param manualMode manual mode enabled/disabled
     /// @return the new value after limit check
-    bool setManualMode(bool manualMode);
+    bool setManualOutputActive(bool manualMode);
 
     /// @brief Gets the manual power [%]
     uint8_t getManualPower() { return _manualPower; };
