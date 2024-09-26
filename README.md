@@ -44,5 +44,12 @@ You can find the the electrical drawings and parts inside `Documentation\Fritzin
 <img src="Documentation/Images/Image1.jpg" alt="drawing" width="250" />
 <img src="Documentation/Images/Image2.jpg" alt="drawing" width="250" />
 
+## Webinterface
+<img src="Documentation/Screenshots/Webinterface_Adjustment.jpg" alt="drawing" width="300" />
+
+<img src="Documentation/Screenshots/Webinterface_SystemInfo.jpg" alt="drawing" width="300" />
+
+<img src="Documentation/Screenshots/Webinterface_WiFiInfo.jpg" alt="drawing" width="300" />
+
 ## License
 This project is licensed under [MIT license](LICENSE).
