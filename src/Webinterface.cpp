@@ -134,8 +134,7 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
     
 
     // Create tabs
-    _temperatureTab = new TemperatureTab(config->temperatureConfig);
-    _powerTab = new PowerTab(config->powerConfig);
+    _adjustmentTab = new AdjustmentTab(config);
     _systemInfoTab = new SystemInfoTab();
     _wifiInfoTab = new WifiInfoTab();
 
@@ -318,20 +317,20 @@ void SystemInfoTab::update()
 
 /*
 ##############################################
-##             TemperatureTab               ##
+##             AdjustmentTab                ##
 ##############################################
 */
 
-TemperatureTab::TemperatureTab(TemperatureConfig *config) : _config(config)
+AdjustmentTab::AdjustmentTab(Config *config) : _config(config)
 {
-    _tab = ESPUI.addControl(Tab, NO_VALUE, "Temperature"); 
+    _tab = ESPUI.addControl(Tab, NO_VALUE, "Adjustments");
 
     auto tmpAdjGrp = ESPUI.addControl(ControlType::Label, "Temperature Adjustment", NO_VALUE, ControlColor::None, _tab);
     ESPUI.setElementStyle(tmpAdjGrp, STYLE_HIDDEN);
     for (size_t i = 0; i < TEMP_ADJUST_AMOUNT; i++)
     {
-        auto adj = config->getAdjustment(i);
-        _adjustments[i] = ESPUI.addControl(
+        auto adj = config->temperatureConfig->getAdjustment(i);
+        auto numAdjTemp = ESPUI.addControl(
              Number, NO_VALUE, String(adj->getTemperatureAdjusted()), ControlColor::None, tmpAdjGrp,
              [](Control *sender, int type, void *UserInfo)
              {
@@ -344,27 +343,19 @@ TemperatureTab::TemperatureTab(TemperatureConfig *config) : _config(config)
              },
              adj);
         
-        ESPUI.setElementStyle(_adjustments[i], STYLE_NUM_TEMP_ADJUST_NORMAL);
+        ESPUI.setElementStyle(numAdjTemp, STYLE_NUM_TEMP_ADJUST_NORMAL);
     
         auto lblCtl = ESPUI.addControl(ControlType::Label, NO_VALUE, "°C  at " + String(adj->tempReal) + " °C", ControlColor::None, tmpAdjGrp);
         ESPUI.setElementStyle(lblCtl, STYLE_LBL_ADJUST);
     }
 
-    updateStatus();
-}
 
-void TemperatureTab::update()
-{
-    for (size_t i = 0; i < TEMP_ADJUST_AMOUNT; i++)
+    auto pwrAdjGrp = ESPUI.addControl(ControlType::Label, "Power Adjustment", NO_VALUE, ControlColor::None, _tab);
+    ESPUI.setElementStyle(pwrAdjGrp, STYLE_HIDDEN);
+    for (size_t i = 0; i < POWER_AREA_AMOUNT; i++)
     {
-        ESPUI.updateNumber(_adjustments[i], _config->getAdjustment(i)->getTemperatureAdjusted());
+        new PowerAreaTab(pwrAdjGrp, config->powerConfig->getArea(i));
     }
-
-    updateStatus();
-}
-
-void TemperatureTab::updateStatus()
-{
 }
 
 /*
@@ -373,10 +364,10 @@ void TemperatureTab::updateStatus()
 ##############################################
 */
 
-PowerAreaTab::PowerAreaTab(PowerTab *tab, PowerArea *config) : _tab(tab), _config(config)
+PowerAreaTab::PowerAreaTab(const uint16_t groupCtlId, PowerArea *config) : _config(config)
 {
     _swEnabled = ESPUI.addControl(
-        ControlType::Switcher, config->name.c_str(), String(config->isEnabled() ? 1 : 0), ControlColor::None, tab->getPwrAdjustId(),
+        ControlType::Switcher, config->name.c_str(), String(config->isEnabled() ? 1 : 0), ControlColor::None, groupCtlId,
         [](Control *sender, int type, void *UserInfo)
         {
             PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
@@ -387,7 +378,7 @@ PowerAreaTab::PowerAreaTab(PowerTab *tab, PowerArea *config) : _tab(tab), _confi
     ESPUI.setElementStyle(_swEnabled, STYLE_SWITCH_POWER_ADJUST);
     
     _numEnd = ESPUI.addControl(
-        ControlType::Number, NO_VALUE, String(config->getEnd()), ControlColor::None, tab->getPwrAdjustId(),
+        ControlType::Number, NO_VALUE, String(config->getEnd()), ControlColor::None, groupCtlId,
         [](Control *sender, int type, void *UserInfo)
         {
             PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
@@ -398,10 +389,10 @@ PowerAreaTab::PowerAreaTab(PowerTab *tab, PowerArea *config) : _tab(tab), _confi
             instance->updateStatus();
         },
         this);
-    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "°C  - ", ControlColor::None, tab->getPwrAdjustId()), "background-color: unset; text-align: left; width: 10%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "°C  - ", ControlColor::None, groupCtlId), "background-color: unset; text-align: left; width: 10%;");
         
     _numStart = ESPUI.addControl(
-        ControlType::Number, NO_VALUE, String(config->getStart()), ControlColor::None, tab->getPwrAdjustId(),
+        ControlType::Number, NO_VALUE, String(config->getStart()), ControlColor::None, groupCtlId,
         [](Control *sender, int type, void *UserInfo)
         {
             PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
@@ -412,10 +403,10 @@ PowerAreaTab::PowerAreaTab(PowerTab *tab, PowerArea *config) : _tab(tab), _confi
             instance->updateStatus();
         },
         this);
-    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "°C   ", ControlColor::None, tab->getPwrAdjustId()), "background-color: unset; text-align: left; width: 10%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "°C   ", ControlColor::None, groupCtlId), "background-color: unset; text-align: left; width: 10%;");
     
     _numLimit = ESPUI.addControl(
-        ControlType::Number, NO_VALUE, String(config->getPowerLimit()), ControlColor::None, tab->getPwrAdjustId(),
+        ControlType::Number, NO_VALUE, String(config->getPowerLimit()), ControlColor::None, groupCtlId,
         [](Control *sender, int type, void *UserInfo)
         {
             PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
@@ -426,7 +417,7 @@ PowerAreaTab::PowerAreaTab(PowerTab *tab, PowerArea *config) : _tab(tab), _confi
             instance->updateStatus();
         },
         this);
-    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "\%", ControlColor::None, tab->getPwrAdjustId()), "background-color: unset; text-align: left; width: 15%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "\%", ControlColor::None, groupCtlId), "background-color: unset; text-align: left; width: 15%;");
     ESPUI.addControl(ControlType::Step, NO_VALUE, String(STEP_POWER_LIMIT), ControlColor::None, _numLimit);
 
     updateStatus();
@@ -447,35 +438,6 @@ void PowerAreaTab::updateStatus()
     ESPUI.setElementStyle(_numStart, inputStyle);
     ESPUI.setElementStyle(_numEnd, inputStyle);
     ESPUI.setElementStyle(_numLimit, inputStyle);
-}
-
-/*
-##############################################
-##                PowerTab                  ##
-##############################################
-*/
-
-PowerTab::PowerTab(PowerConfig *config) : _config(config)
-{
-    _tab = ESPUI.addControl(Tab, NO_VALUE, "Power Limit");
-    
-    _lblPwrAdjustment = ESPUI.addControl(ControlType::Label, "Power Adjustment", NO_VALUE, ControlColor::None, _tab);
-    ESPUI.setElementStyle(_lblPwrAdjustment, STYLE_HIDDEN);
-    for (size_t i = 0; i < POWER_AREA_AMOUNT; i++)
-    {
-        _areas[i] = new PowerAreaTab(this, config->getArea(i));
-    }
-
-    updateStatus();
-}
-
-void PowerTab::update()
-{
-    updateStatus();
-}
-
-void PowerTab::updateStatus()
-{
 }
 
 /*

@@ -22,8 +22,6 @@ static const String MAX_POWER_LIMIT_VALUE = String(MAX_POWER_LIMIT);    // Maxim
 static const String MIN_POWER_LIMIT_VALUE = String(MIN_POWER_LIMIT);    // Minimum supported power limit valie
 static const String STEP_POWER_LIMIT_VALUE = String("5");               // Slider step power limit value
 
-class PowerAreaTab;
-
 /// @brief Implements a system information tab inside the Webinterface
 class SystemInfoTab
 {
@@ -48,83 +46,6 @@ public:
 
     /// @brief Update the system information
     void update();
-};
-
-/// @brief Web UI tab to interact with the Temperature Configuration
-class TemperatureTab
-{
-private:
-    TemperatureConfig *_config;
-    uint16_t _adjustments[TEMP_ADJUST_AMOUNT];
-    uint16_t _tab;
-
-protected:
-public:
-    /// @brief Creates a new tab for the temperature configuration inside the Web interface
-    /// @param config the temperature configuration
-    TemperatureTab(TemperatureConfig *config);
-
-    /// @brief Gets the ID of the UI Tab
-    uint16_t getTabId() { return _tab; };
-
-    /// @brief Forces an update of the UI values
-    void update();
-
-    /// @brief Foreces an update of the status indicator to make a invalid configuration visible
-    void updateStatus();
-};
-
-/// @brief Web UI tab to interact with the Power Configuration
-class PowerTab
-{
-private:
-    PowerAreaTab *_areas[POWER_AREA_AMOUNT];
-    PowerConfig *_config;
-    uint16_t _tab;
-    uint16_t _lblPwrAdjustment;
-
-protected:
-public:
-    /// @brief Creates a new tab for the power configuration inside the Web interface
-    /// @param config the power configuration
-    PowerTab(PowerConfig *config);
-
-    /// @brief Gets the ID of the UI Tab
-    uint16_t getTabId() { return _tab; };
-
-    /// @brief Gets the ID of the UI Lable for power adjustments
-    uint16_t getPwrAdjustId() { return _lblPwrAdjustment; };
-
-    /// @brief Forces an update of the UI values
-    void update();
-
-    /// @brief Foreces an update of the status indicator to make a invalid configuration visible
-    void updateStatus();
-};
-
-/// @brief Web UI temperature element that represents a power limit area
-class PowerAreaTab
-{
-private:
-    PowerTab *_tab;
-    PowerArea *_config;
-    uint16_t _swEnabled;
-    uint16_t _numStart;
-    uint16_t _numEnd;
-    uint16_t _numLimit;
-
-protected:
-public:
-    /// @brief Creates a area for the power limit configuration inside the Web interface
-    /// @param tab the parent power limit tab
-    /// @param config the power limit area configuration
-    PowerAreaTab(PowerTab *tab, PowerArea *config);
-
-    /// @brief Forces an update of the UI values
-    void update();
-
-    /// @brief Foreces an update of the status indicator to make a invalid configuration visible
-    void updateStatus();
 };
 
 /// @brief Holds a available WiFi option
@@ -168,6 +89,45 @@ public:
     void update();
 };
 
+/// @brief Web UI temperature element that represents a power limit area
+class PowerAreaTab
+{
+private:
+    PowerArea *_config;
+    uint16_t _swEnabled;
+    uint16_t _numStart;
+    uint16_t _numEnd;
+    uint16_t _numLimit;
+
+protected:
+public:
+    /// @brief Creates a area for the power limit configuration inside the Web interface
+    /// @param groupCtlId the parent control group ID
+    /// @param config the power limit area configuration
+    PowerAreaTab(const uint16_t groupCtlId, PowerArea *config);
+
+    /// @brief Forces an update of the UI values
+    void update();
+
+    /// @brief Foreces an update of the status indicator to make a invalid configuration visible
+    void updateStatus();
+};
+
+/// @brief Adjustements tab to define the manipulation of output temperature and power limit
+class AdjustmentTab 
+{
+private:
+    Config *_config;
+    uint16_t _tab;
+
+protected:
+public:
+    /// @brief Creates the adjustment tab instance
+    /// @param config the configuration
+    /// @param wifiManager the WiFi manager
+    AdjustmentTab(Config *config);
+};
+
 /// @brief Web UI
 class Webinterface
 {
@@ -183,8 +143,7 @@ private:
     uint16_t _numManualPowerOutput;
     uint16_t _lblTempOutput;
     uint16_t _lblPowerOutput;
-    TemperatureTab *_temperatureTab;
-    PowerTab *_powerTab;
+    AdjustmentTab *_adjustmentTab;
     SystemInfoTab *_systemInfoTab;
     WifiInfoTab *_wifiInfoTab;
 
@@ -213,4 +172,3 @@ public:
     /// @param powerLimit the new power limit [%]
     void setOuputPowerLimit(const float powerLimit);
 };
-
