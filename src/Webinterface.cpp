@@ -331,21 +331,21 @@ AdjustmentTab::AdjustmentTab(Config *config) : _config(config)
     {
         auto adj = config->temperatureConfig->getAdjustment(i);
         auto numAdjTemp = ESPUI.addControl(
-             Number, NO_VALUE, String(adj->getTemperatureAdjusted()), ControlColor::None, tmpAdjGrp,
+             Number, NO_VALUE, String(adj->getTemperatureOffset()), ControlColor::None, tmpAdjGrp,
              [](Control *sender, int type, void *UserInfo)
              {
                 TemperatureAdjustment *instance = static_cast<TemperatureAdjustment *>(UserInfo);
                 if(sender->value.isEmpty())
-                    ESPUI.updateNumber(sender->id, instance->getTemperatureAdjusted());
+                    ESPUI.updateNumber(sender->id, instance->getTemperatureOffset());
                 else
-                    ESPUI.updateNumber(sender->id, instance->setTemperatureAdjusted(sender->value.toInt()));
+                    ESPUI.updateNumber(sender->id, instance->setTemperatureOffset(sender->value.toInt()));
                 ESPUI.setElementStyle(sender->id, STYLE_NUM_TEMP_ADJUST_NORMAL);
              },
              adj);
         
         ESPUI.setElementStyle(numAdjTemp, STYLE_NUM_TEMP_ADJUST_NORMAL);
     
-        auto lblCtl = ESPUI.addControl(ControlType::Label, NO_VALUE, "°C  at " + String(adj->tempReal) + " °C", ControlColor::None, tmpAdjGrp);
+        auto lblCtl = ESPUI.addControl(ControlType::Label, NO_VALUE, "°C offset at " + String(adj->tempReal) + " °C", ControlColor::None, tmpAdjGrp);
         ESPUI.setElementStyle(lblCtl, STYLE_LBL_ADJUST);
     }
 

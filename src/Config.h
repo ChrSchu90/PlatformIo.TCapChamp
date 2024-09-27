@@ -12,7 +12,7 @@
 #define KEY_SETTING_TEMP_MANUAL_OUT_TEMP "ManualOutTemp"    // Preferences key for manual output temperature (limited to 15 chars)
 #define KEY_SETTING_TEMP_MANUAL_IN_MODE "TempInManual"      // Preferences key for manual input temperature mode (limited to 15 chars)
 #define KEY_SETTING_TEMP_MANUAL_IN_TEMP "ManualInTemp"      // Preferences key for manual input temperature (limited to 15 chars)
-#define KEY_SETTING_TEMP_ADJUST_TEMP "AdjustTemp"           // Preferences key for manual temperature NOTE: WITHOUT INDEX (limited to 15 chars)
+#define KEY_SETTING_TEMP_ADJUST_TEMP_OFFSET "TempOffset"    // Preferences key for temperature offset NOTE: WITHOUT INDEX (limited to 15 chars)
 
 #define MIN_POWER_LIMIT 0                             // Minimum supported power limit in %
 #define MAX_POWER_LIMIT 100                           // Maximum supported power limit in %
@@ -34,7 +34,7 @@ class TemperatureAdjustment
 {
 private:
     Preferences *_preferences;    
-    int8_t _tempAdjusted;       // Adjusted temperature
+    int8_t _tempOffset;         // Temperature offset
 
 protected:
 public:
@@ -45,13 +45,15 @@ public:
     TemperatureAdjustment(int8_t tempReal, Preferences *preferences);
 
     /// @brief Gets the adjusted temperature
-    /// @return the saved adjusted temperature
-    int8_t getTemperatureAdjusted() { return _tempAdjusted; }
+    int8_t getTemperatureAdjusted() { return tempReal + _tempOffset; };
 
-    /// @brief Sets the adjusted temperature
-    /// @param temperature the new adjusted temperature
-    /// @return the saved adjusted temperature after limit checks
-    int8_t setTemperatureAdjusted(int8_t temperature);
+    /// @brief Gets the temperature offset
+    int8_t getTemperatureOffset() { return _tempOffset; };
+
+    /// @brief Sets the temperature offset to calculate the adjusted temperature
+    /// @param offset the new offset
+    /// @return the saved temperature offset after limit checks
+    int8_t setTemperatureOffset(int8_t offset);
 };
 
 /// @brief Holds the temperature configuration

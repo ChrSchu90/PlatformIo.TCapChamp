@@ -12,6 +12,7 @@
 Config::Config() : _preferences(new Preferences())
 {
     _preferences->begin(KEY_SETTINGS_NAMESPACE, false);
+    //_preferences->clear();
 
     temperatureConfig = new TemperatureConfig(_preferences);
     powerConfig = new PowerConfig(_preferences);
@@ -165,23 +166,21 @@ TemperatureAdjustment *TemperatureConfig::getTempAdjustment(int8_t tempReal)
 
 TemperatureAdjustment::TemperatureAdjustment(int8_t tempReal, Preferences *preferences) : _preferences(preferences), tempReal(tempReal)
 {
-    _tempAdjusted = preferences->getChar(KEY_SETTING_TEMP_ADJUST_TEMP + tempReal, tempReal);
-};
+    _tempOffset = preferences->getChar(KEY_SETTING_TEMP_ADJUST_TEMP_OFFSET + tempReal, 0);
+}
 
-int8_t TemperatureAdjustment::setTemperatureAdjusted(int8_t temperature)
+int8_t TemperatureAdjustment::setTemperatureOffset(int8_t offset)
 {
-    temperature = min(max(temperature, (int8_t)(tempReal - ADJUST_TEMP_MAX_OFSET)), (int8_t)(tempReal + ADJUST_TEMP_MAX_OFSET));
-    temperature = min(max(temperature, (int8_t)MIN_TEMPERATURE), (int8_t)MAX_TEMPERATURE);
-
-    if (temperature == _tempAdjusted)
+    offset = min(max(offset, (int8_t)(ADJUST_TEMP_MAX_OFSET * -1)), (int8_t)(ADJUST_TEMP_MAX_OFSET));
+    if(offset == _tempOffset)
     {
-        return _tempAdjusted;
+        return _tempOffset;
     }
 
-    _tempAdjusted = temperature;
-    _preferences->putChar(KEY_SETTING_TEMP_ADJUST_TEMP + tempReal, _tempAdjusted);
-    return _tempAdjusted;
-};
+    _tempOffset = offset;
+    _preferences->putChar(KEY_SETTING_TEMP_ADJUST_TEMP_OFFSET + tempReal, offset);
+    return _tempOffset;
+}
 
 /*
 ##############################################
