@@ -27,10 +27,10 @@ TemperatureConfig::TemperatureConfig(Preferences *preferences) : _preferences(pr
 {
     // Check limit and round to 0.1
     _manualOutputActive = preferences->getBool(KEY_SETTING_TEMP_MANUAL_OUT_MODE, false);
-    _manualOutputTemperature = preferences->getFloat(KEY_SETTING_TEMP_MANUAL_OUT_TEMP, 15.0f);
+    _manualOutputTemperature = preferences->getShort(KEY_SETTING_TEMP_MANUAL_OUT_TEMP, 150) / 10.0f;
 
     _manualInputActive = preferences->getBool(KEY_SETTING_TEMP_MANUAL_IN_MODE, false);
-    _manualInputTemperature = preferences->getFloat(KEY_SETTING_TEMP_MANUAL_IN_TEMP, 10.0f);
+    _manualInputTemperature = preferences->getShort(KEY_SETTING_TEMP_MANUAL_IN_TEMP, 100) / 10.0f;
 
     for (size_t i = 0; i < TEMP_ADJUST_AMOUNT; i++)
     {
@@ -74,7 +74,7 @@ float TemperatureConfig::setManualOutputTemperature(float manualTemperature)
     }
 
     _manualOutputTemperature = manualTemperature;
-    _preferences->putFloat(KEY_SETTING_TEMP_MANUAL_OUT_TEMP, _manualOutputTemperature);
+    _preferences->putShort(KEY_SETTING_TEMP_MANUAL_OUT_TEMP, (int16_t)(_manualOutputTemperature * 10));
     return _manualOutputTemperature;
 }
 
@@ -90,7 +90,7 @@ float TemperatureConfig::setManualInputTemperature(float manualTemperature)
     }
 
     _manualInputTemperature = manualTemperature;
-    _preferences->putFloat(KEY_SETTING_TEMP_MANUAL_IN_TEMP, _manualInputTemperature);
+    _preferences->putShort(KEY_SETTING_TEMP_MANUAL_IN_TEMP, (int16_t)(_manualInputTemperature * 10));
     return _manualInputTemperature;
 }
 
