@@ -9,11 +9,11 @@
 #define STYLE_NUM_POWER_ADJUST_ERROR "width: 15%; color: black; background: rgba(231,76,60,0.8);"
 #define STYLE_NUM_POWER_ADJUST_DISABLED "width: 15%; color: black; background: rgba(153,153,153,0.8);"
 #define STYLE_LBL_ADJUST "background-color: unset; width: 85%; text-align-last: left;"
-#define STYLE_LBL_INOUT "width: 15%;"
+#define STYLE_LBL_INOUT "width: 16%;"
 #define STYLE_SWITCH_INOUT "vertical-align: middle; margin-right: 25px; margin-bottom: 3px; width: 12.5%;"
-#define STYLE_NUM_INOUT_MANUAL_INPUT "vertical-align: middle; margin-bottom: 3px; width: 15%; color: black; background: rgba(255,255,255,0.8);"
+#define STYLE_NUM_INOUT_MANUAL_INPUT "vertical-align: middle; margin-bottom: 3px; width: 16%; color: black; background: rgba(255,255,255,0.8);"
 #define STYLE_LBL_INOUT_VALUE_OUTPUT "background-color: unset; text-align: left; width: 80%;"
-#define STYLE_SWITCH_INOUT_MANUAL_ENABLE "background-color: unset; text-align: left; width: 62.5%;" 
+#define STYLE_SWITCH_INOUT_MANUAL_ENABLE "background-color: unset; text-align: left; width: 61.5%;" 
 
 static const char * NO_VALUE = "";                                      // Empty string for no value
 static const String MAX_TEMPERATURE_VALUE = String(MAX_TEMPERATURE);    // Maximum supported temperature value
