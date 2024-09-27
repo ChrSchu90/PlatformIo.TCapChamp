@@ -140,6 +140,7 @@ private:
     uint16_t _numManualTempOutput;
     uint16_t _numManualPowerOutput;
     uint16_t _lblTempOutput;
+    uint16_t _lblTempTarget;
     uint16_t _lblPowerOutput;
     AdjustmentTab *_adjustmentTab;
     SystemInfoTab *_systemInfoTab;
@@ -163,8 +164,12 @@ public:
     void setWeatherTemp(const float temperature);
 
     /// @brief Updates the output temperature inside webinterface
-    /// @param temperature the new temperature
+    /// @param temperature the new output temperature
     void setOutputTemp(const float temperature);
+
+    /// @brief Updates the target temperature inside webinterface
+    /// @param temperature the new target temperature
+    void setTargetTemp(const float temperature);
 
     /// @brief Updates the output power limit inside webinterface
     /// @param powerLimit the new power limit [%]

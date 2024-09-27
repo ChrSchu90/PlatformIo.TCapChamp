@@ -43,6 +43,7 @@ Config *_config;			 									// Access to the configuration
 float _thermistorInTemperature = NAN;							// Last temperature from input sensor (NAN if not available)
 float _weatherApiTemperature = NAN;								// Last temperature from weather API (NAN if not available)
 float _outputTemperature = NAN;									// Last output temperature (NAN if no temperature could be calculated)
+float _targetTemperature = NAN;									// Last output target temperature (NAN if no temperature could be calculated)
 uint8_t _powerLimitPercent = 0;									// Last powerlimit in percent (<10 means disabled)
 
 /// @brief Reads the ADC voltage with none linear compensation (maximum reading 3.3V range from 0 to 4095)
@@ -321,6 +322,7 @@ bool updateOutputTemperature()
 #endif
 			_spiDigitalPoti->transfer16(posistion);
 			_outputTemperature = outputTemperature;
+			_targetTemperature = targetTemp;
 			changed = true;
 		}
 	}
@@ -354,6 +356,7 @@ void setupOutputTemperature()
 			if (updateOutputTemperature() && _webinterface)
 			{
 				_webinterface->setOutputTemp(_outputTemperature);
+				_webinterface->setTargetTemp(_targetTemperature);
 			}
 
 			return true;
@@ -464,6 +467,7 @@ void setupWebinterface()
 	_webinterface->setSensorTemp(_thermistorInTemperature);
 	_webinterface->setWeatherTemp(_weatherApiTemperature);
 	_webinterface->setOutputTemp(_outputTemperature);
+	_webinterface->setTargetTemp(_targetTemperature);
 	if (_i2cDac)
 	{
 		_webinterface->setOuputPowerLimit(_powerLimitPercent);

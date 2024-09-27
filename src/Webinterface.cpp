@@ -68,6 +68,10 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
     _lblTempOutput = ESPUI.addControl(ControlType::Label, NO_VALUE, String(NAN) + " °C", ControlColor::None, outputTempGrp);
     ESPUI.setElementStyle(_lblTempOutput, STYLE_LBL_INOUT);
     ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Actual", ControlColor::None, outputTempGrp), STYLE_LBL_INOUT_VALUE_OUTPUT);
+
+    _lblTempTarget = ESPUI.addControl(ControlType::Label, NO_VALUE, String(NAN) + " °C", ControlColor::None, outputTempGrp);
+    ESPUI.setElementStyle(_lblTempTarget, STYLE_LBL_INOUT);
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Target", ControlColor::None, outputTempGrp), STYLE_LBL_INOUT_VALUE_OUTPUT);
     
     _numManualTempOutput = ESPUI.addControl(
         ControlType::Number, NO_VALUE, String(config->temperatureConfig->getManualOutputTemperature(), 1), ControlColor::None, outputTempGrp,
@@ -208,6 +212,11 @@ void Webinterface::setWeatherTemp(const float temperature)
 void Webinterface::setOutputTemp(const float temperature)
 {
     ESPUI.updateLabel(_lblTempOutput, String(temperature) + " °C");
+}
+
+void Webinterface::setTargetTemp(const float temperature)
+{
+    ESPUI.updateLabel(_lblTempTarget, String(temperature) + " °C");
 }
 
 void Webinterface::setOuputPowerLimit(const float powerLimit)
