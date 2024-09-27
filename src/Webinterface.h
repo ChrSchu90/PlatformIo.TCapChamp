@@ -3,16 +3,16 @@
 #include "Config.h"
 
 #define STYLE_HIDDEN "background-color: unset; width: 0px; height: 0px; display: none;"
-#define STYLE_NUM_TEMP_ADJUST_NORMAL "width: 15%; color: black; background: rgba(255,255,255,0.8);"
+#define STYLE_NUM_TEMP_ADJUST_NORMAL "width: 16%; color: black; background: rgba(255,255,255,0.8);"
 #define STYLE_NUM_POWER_ADJUST_NORMAL "width: 16%; color: black; background: rgba(255,255,255,0.8);"
 #define STYLE_NUM_POWER_ADJUST_ERROR "width: 16%; color: black; background: rgba(231,76,60,0.8);"
 #define STYLE_NUM_POWER_ADJUST_DISABLED "width: 16%; color: black; background: rgba(153,153,153,0.8);"
-#define STYLE_LBL_ADJUST "background-color: unset; width: 85%; text-align-last: left;"
+#define STYLE_LBL_ADJUST "background-color: unset; width: 84%; text-align-last: left;"
 #define STYLE_LBL_INOUT "width: 16%;"
-#define STYLE_SWITCH_INOUT "vertical-align: middle; margin-right: 25px; margin-bottom: 3px; width: 12.5%;"
-#define STYLE_NUM_INOUT_MANUAL_INPUT "vertical-align: middle; margin-bottom: 3px; width: 16%; color: black; background: rgba(255,255,255,0.8);"
-#define STYLE_LBL_INOUT_VALUE_OUTPUT "background-color: unset; text-align: left; width: 80%;"
-#define STYLE_SWITCH_INOUT_MANUAL_ENABLE "background-color: unset; text-align: left; width: 61.5%;" 
+#define STYLE_SWITCH_INOUT "margin-bottom: 3px; width: 12.5%; vertical-align: middle; "
+#define STYLE_NUM_INOUT_MANUAL_INPUT "width: 16%; color: black; background: rgba(255,255,255,0.8);"
+#define STYLE_LBL_INOUT_VALUE_OUTPUT "background-color: unset; text-align: left; width: 83.5%;"
+#define STYLE_LBL_INOUT_MANUAL_ENABLE "background-color: unset; text-align: left; width: 70%; vertical-align: bottom;" 
 
 static const char * NO_VALUE = "";                                      // Empty string for no value
 static const String MAX_TEMPERATURE_VALUE = String(MAX_TEMPERATURE);    // Maximum supported temperature value
