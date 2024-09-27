@@ -2,12 +2,12 @@
 [![Build](https://github.com/ChrSchu90/PlatformIo.TCapChamp/actions/workflows/build.yml/badge.svg)](https://github.com/ChrSchu90/PlatformIo.TCapChamp/actions/workflows/build.yml)
 
 ## Description
-`ESP32` project that manipulates the outside temperature to adjust the cycle rate of the heat pump to increase the efficiency of a overdimensioned heat pump.
+`ESP32` project that manipulates the outside temperature to adjust the heat pump cycle rate. In case the heat pump is overdimensioned it can increase its efficiency dramatically since you can adjust the cycle rate specifically on your environment and needs.
 The manipulated temperature output needs to be connected to the external temperature sensor of the T-Cap.
 If you already use an external temperature sensor you can connect it as input sensor for the ESP, 
 in case you don't have a temperature sensor you can use the free [OpenWeather API](https://api.openweathermap.org) to receive actual temperatures. 
 
-Via an optional 0-10V DAC it is also possible to limit the power consumption via `Demand Control`.
+Via an optional 0-10V DAC it is also possible to limit the power consumption via `Demand Control` of the T-Cap.
 
 [Service Manual T-Cap (PDF)](https://www.kaelte-bast.de/dateien_neu13/Panasonic/01-produktunterlagen/aquarea/produkte/waermepumpen/t-cap/sqc/handbuch_englisch/sm_wh-sqc09h3e8%2Cwh-sqc12.16h9e8_%28papamy1704053ce%29.pdf)
 
