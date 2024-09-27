@@ -4,10 +4,9 @@
 
 #define STYLE_HIDDEN "background-color: unset; width: 0px; height: 0px; display: none;"
 #define STYLE_NUM_TEMP_ADJUST_NORMAL "width: 15%; color: black; background: rgba(255,255,255,0.8);"
-#define STYLE_SWITCH_POWER_ADJUST "vertical-align: middle; margin-right: 25px; margin-bottom: 3px; width: 12.5%;"
-#define STYLE_NUM_POWER_ADJUST_NORMAL "width: 15%; color: black; background: rgba(255,255,255,0.8);"
-#define STYLE_NUM_POWER_ADJUST_ERROR "width: 15%; color: black; background: rgba(231,76,60,0.8);"
-#define STYLE_NUM_POWER_ADJUST_DISABLED "width: 15%; color: black; background: rgba(153,153,153,0.8);"
+#define STYLE_NUM_POWER_ADJUST_NORMAL "width: 16%; color: black; background: rgba(255,255,255,0.8);"
+#define STYLE_NUM_POWER_ADJUST_ERROR "width: 16%; color: black; background: rgba(231,76,60,0.8);"
+#define STYLE_NUM_POWER_ADJUST_DISABLED "width: 16%; color: black; background: rgba(153,153,153,0.8);"
 #define STYLE_LBL_ADJUST "background-color: unset; width: 85%; text-align-last: left;"
 #define STYLE_LBL_INOUT "width: 16%;"
 #define STYLE_SWITCH_INOUT "vertical-align: middle; margin-right: 25px; margin-bottom: 3px; width: 12.5%;"
@@ -94,7 +93,6 @@ class PowerAreaTab
 {
 private:
     PowerArea *_config;
-    uint16_t _swEnabled;
     uint16_t _numStart;
     uint16_t _numEnd;
     uint16_t _numLimit;

@@ -272,24 +272,10 @@ PowerArea *PowerConfig::getArea(float temperature)
 */
 
 PowerArea::PowerArea(size_t index, PowerConfig *config, Preferences *preferences) : index(index), name("Area " + String(index + 1)), _config(config), _preferences(preferences)
-{
-    _enabled = preferences->getBool(KEY_SETTING_POWER_AREA_ENABLED + index, false);
-    _start = preferences->getChar(KEY_SETTING_POWER_AREA_START + index, 0);
+{    _start = preferences->getChar(KEY_SETTING_POWER_AREA_START + index, 0);
     _end = preferences->getChar(KEY_SETTING_POWER_AREA_END + index, 0);
     _powerLimit = preferences->getUChar(KEY_SETTING_POWER_AREA_LIMIT + index, MAX_POWER_LIMIT);
 };
-
-bool PowerArea::setEnabled(bool enabled)
-{
-    if (enabled == _enabled)
-    {
-        return _enabled;
-    }
-
-    _enabled = enabled;
-    _preferences->putBool(KEY_SETTING_POWER_AREA_ENABLED + index, _enabled);
-    return _enabled;
-}
 
 int8_t PowerArea::setStart(int8_t start)
 {
@@ -333,7 +319,7 @@ uint8_t PowerArea::setPowerLimit(uint8_t powerLimit)
 
 bool PowerArea::isResponsable(float temperature)
 {
-    return !isnanf(temperature) && _enabled && isValid() && temperature >= _start && temperature <= _end;
+    return !isnanf(temperature) && isEnabled() && isValid() && temperature >= _start && temperature <= _end;
 }
 
 bool PowerArea::isValid()

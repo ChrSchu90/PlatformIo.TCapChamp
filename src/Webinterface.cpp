@@ -365,18 +365,7 @@ AdjustmentTab::AdjustmentTab(Config *config) : _config(config)
 */
 
 PowerAreaTab::PowerAreaTab(const uint16_t groupCtlId, PowerArea *config) : _config(config)
-{
-    _swEnabled = ESPUI.addControl(
-        ControlType::Switcher, config->name.c_str(), String(config->isEnabled() ? 1 : 0), ControlColor::None, groupCtlId,
-        [](Control *sender, int type, void *UserInfo)
-        {
-            PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
-            ESPUI.updateSwitcher(sender->id, instance->_config->setEnabled(sender->value.toInt() > 0));
-            instance->updateStatus();
-        },
-        this);
-    ESPUI.setElementStyle(_swEnabled, STYLE_SWITCH_POWER_ADJUST);
-    
+{    
     _numEnd = ESPUI.addControl(
         ControlType::Number, NO_VALUE, String(config->getEnd()), ControlColor::None, groupCtlId,
         [](Control *sender, int type, void *UserInfo)
@@ -389,7 +378,7 @@ PowerAreaTab::PowerAreaTab(const uint16_t groupCtlId, PowerArea *config) : _conf
             instance->updateStatus();
         },
         this);
-    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "°C  - ", ControlColor::None, groupCtlId), "background-color: unset; text-align: left; width: 10%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "°C   -", ControlColor::None, groupCtlId), "background-color: unset; text-align: left; width: 12.5%;");
         
     _numStart = ESPUI.addControl(
         ControlType::Number, NO_VALUE, String(config->getStart()), ControlColor::None, groupCtlId,
@@ -403,7 +392,7 @@ PowerAreaTab::PowerAreaTab(const uint16_t groupCtlId, PowerArea *config) : _conf
             instance->updateStatus();
         },
         this);
-    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "°C   ", ControlColor::None, groupCtlId), "background-color: unset; text-align: left; width: 10%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "°C   =", ControlColor::None, groupCtlId), "background-color: unset; text-align: left; width: 13.5%;");
     
     _numLimit = ESPUI.addControl(
         ControlType::Number, NO_VALUE, String(config->getPowerLimit()), ControlColor::None, groupCtlId,
@@ -417,7 +406,7 @@ PowerAreaTab::PowerAreaTab(const uint16_t groupCtlId, PowerArea *config) : _conf
             instance->updateStatus();
         },
         this);
-    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "\%", ControlColor::None, groupCtlId), "background-color: unset; text-align: left; width: 15%;");
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "\%", ControlColor::None, groupCtlId), "background-color: unset; text-align: left; width: 26%;");
     ESPUI.addControl(ControlType::Step, NO_VALUE, String(STEP_POWER_LIMIT), ControlColor::None, _numLimit);
 
     updateStatus();
@@ -425,7 +414,6 @@ PowerAreaTab::PowerAreaTab(const uint16_t groupCtlId, PowerArea *config) : _conf
 
 void PowerAreaTab::update()
 {
-    ESPUI.updateSwitcher(_swEnabled, _config->isEnabled());
     ESPUI.updateNumber(_numStart, _config->getStart());
     ESPUI.updateNumber(_numEnd, _config->getEnd());
     ESPUI.updateNumber(_numLimit, _config->getPowerLimit());

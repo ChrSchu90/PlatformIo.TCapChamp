@@ -19,7 +19,6 @@
 #define STEP_POWER_LIMIT 5                            // Setps supported by the power limit in %
 #define KEY_SETTING_POWER_MANUAL_MODE "PowerManual"   // Preferences key for manual power mode (limited to 15 chars)
 #define KEY_SETTING_POWER_MANUAL_POWER "ManualPower"  // Preferences key for manual power (limited to 15 chars)
-#define KEY_SETTING_POWER_AREA_ENABLED "PowerEnabled" // Preferences key area enabled/disabled NOTE: WITHOUT INDEX
 #define KEY_SETTING_POWER_AREA_START "PowerStart"     // Preferences key area start temperature NOTE: WITHOUT INDEX
 #define KEY_SETTING_POWER_AREA_END "PowerEnd"         // Preferences key area end temperature NOTE: WITHOUT INDEX
 #define KEY_SETTING_POWER_AREA_LIMIT "PowerLimit"     // Preferences key area power limit NOTE: WITHOUT INDEX
@@ -170,7 +169,6 @@ class PowerArea
 private:
     PowerConfig *_config;
     Preferences *_preferences;
-    bool _enabled;
     int8_t _start;
     int8_t _end;
     uint8_t _powerLimit;
@@ -192,15 +190,10 @@ public:
     bool isResponsable(float temperature);
 
     /// @brief Gets if the area is enabled
-    bool isEnabled() { return _enabled; };
+    bool isEnabled() { return _start != _end; };
 
     /// @brief Gets if the area configuiration is valid
     bool isValid();
-
-    /// @brief Enables/disables the area
-    /// @param enabled defines if the area is enabled
-    /// @return the new value after limit check
-    bool setEnabled(bool enabled);
 
     /// @brief Gets the start temperature of the area
     int8_t getStart() { return _start; };
