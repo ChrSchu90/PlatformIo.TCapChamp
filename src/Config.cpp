@@ -166,19 +166,22 @@ TemperatureAdjustment *TemperatureConfig::getTempAdjustment(int8_t tempReal)
 
 TemperatureAdjustment::TemperatureAdjustment(int8_t tempReal, Preferences *preferences) : _preferences(preferences), tempReal(tempReal)
 {
-    _tempOffset = preferences->getChar(KEY_SETTING_TEMP_ADJUST_TEMP_OFFSET + tempReal, 0);
+    _tempOffset = preferences->getChar(KEY_SETTING_TEMP_ADJUST_TEMP_OFFSET + tempReal, 0) / 10.0f;
 }
 
-int8_t TemperatureAdjustment::setTemperatureOffset(int8_t offset)
+float TemperatureAdjustment::setTemperatureOffset(float offset)
 {
-    offset = min(max(offset, (int8_t)(ADJUST_TEMP_MAX_OFSET * -1)), (int8_t)(ADJUST_TEMP_MAX_OFSET));
+    // Check limit and round to 0.1
+    offset = min(max(offset, (float)(ADJUST_TEMP_MAX_OFSET * -1)), (float)(ADJUST_TEMP_MAX_OFSET));
+    offset = roundf(offset * 10) / 10;
+
     if(offset == _tempOffset)
     {
         return _tempOffset;
     }
 
     _tempOffset = offset;
-    _preferences->putChar(KEY_SETTING_TEMP_ADJUST_TEMP_OFFSET + tempReal, offset);
+    _preferences->putChar(KEY_SETTING_TEMP_ADJUST_TEMP_OFFSET + tempReal, (int8_t)(_tempOffset * 10));
     return _tempOffset;
 }
 
@@ -213,7 +216,10 @@ bool PowerConfig::setManualOutputActive(bool manualMode)
 
 uint8_t PowerConfig::setManualPower(uint8_t manualPower)
 {
+    // Check limit and round to next 5
     manualPower = min(max(manualPower, (uint8_t)MIN_POWER_LIMIT), (uint8_t)MAX_POWER_LIMIT);
+    manualPower = ((uint8_t)round((manualPower + (uint8_t)(STEP_POWER_LIMIT / 2)) / STEP_POWER_LIMIT)) * STEP_POWER_LIMIT;
+
     if (_manualPower == manualPower)
     {
         return _manualPower;
@@ -270,42 +276,49 @@ PowerArea *PowerConfig::getArea(float temperature)
 ##############################################
 */
 
-PowerArea::PowerArea(size_t index, PowerConfig *config, Preferences *preferences) : index(index), name("Area " + String(index + 1)), _config(config), _preferences(preferences)
-{    _start = preferences->getChar(KEY_SETTING_POWER_AREA_START + index, 0);
-    _end = preferences->getChar(KEY_SETTING_POWER_AREA_END + index, 0);
+PowerArea::PowerArea(size_t index, PowerConfig *config, Preferences *preferences) : index(index), _config(config), _preferences(preferences)
+{    _start = preferences->getShort(KEY_SETTING_POWER_AREA_START + index, 0) / 10.0f;
+    _end = preferences->getShort(KEY_SETTING_POWER_AREA_END + index, 0) / 10.0f;
     _powerLimit = preferences->getUChar(KEY_SETTING_POWER_AREA_LIMIT + index, MAX_POWER_LIMIT);
 };
 
-int8_t PowerArea::setStart(int8_t start)
+float PowerArea::setStart(float start)
 {
-    start = min(max(start, (int8_t)MIN_TEMPERATURE), (int8_t)MAX_TEMPERATURE);
+    // Check limit and round to 0.1
+    start = min(max(start, (float)MIN_TEMPERATURE), (float)MAX_TEMPERATURE);
+    start = roundf(start * 10) / 10;
+
     if (start == _start)
     {
         return _start;
     }
 
     _start = start;
-    _preferences->putChar(KEY_SETTING_POWER_AREA_START + index, _start);
+    _preferences->putShort(KEY_SETTING_POWER_AREA_START + index, (int16_t)(_start * 10));
     return _start;
 }
 
-int8_t PowerArea::setEnd(int8_t end)
+float PowerArea::setEnd(float end)
 {
-    end = min(max(end, (int8_t)MIN_TEMPERATURE), (int8_t)MAX_TEMPERATURE);
+    // Check limit and round to 0.1
+    end = min(max(end, (float)MIN_TEMPERATURE), (float)MAX_TEMPERATURE);
+    end = roundf(end * 10) / 10;
+
     if (end == _end)
     {
         return _end;
     }
 
     _end = end;
-    _preferences->putChar(KEY_SETTING_POWER_AREA_END + index, _end);
+    _preferences->putShort(KEY_SETTING_POWER_AREA_END + index, (int16_t)(_end * 10));
     return _end;
 }
 
 uint8_t PowerArea::setPowerLimit(uint8_t powerLimit)
 {
-    powerLimit = ((uint8_t)round((powerLimit + (uint8_t)(STEP_POWER_LIMIT / 2)) / STEP_POWER_LIMIT)) * STEP_POWER_LIMIT;
+    // Check limit and round to next 5
     powerLimit = min(max(powerLimit, (uint8_t)MIN_POWER_LIMIT), (uint8_t)MAX_POWER_LIMIT);
+    powerLimit = ((uint8_t)round((powerLimit + (uint8_t)(STEP_POWER_LIMIT / 2)) / STEP_POWER_LIMIT)) * STEP_POWER_LIMIT;
     if (powerLimit == _powerLimit)
     {
         return _powerLimit;

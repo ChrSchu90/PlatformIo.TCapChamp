@@ -57,7 +57,6 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
         },
         this);
     ESPUI.setElementStyle(_swManualTempInput, STYLE_SWITCH_INOUT);
-    ESPUI.addControl(ControlType::Step, NO_VALUE, "0.1", ControlColor::None, _numManualTempInput);
     ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Manual (fallback if no input available)", ControlColor::None, inputTempGrp), STYLE_LBL_INOUT_MANUAL_ENABLE);
 
 
@@ -82,7 +81,6 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
             ESPUI.setElementStyle(sender->id, STYLE_NUM_INOUT_MANUAL_INPUT);
         },
         this);
-    ESPUI.addControl(ControlType::Step, NO_VALUE, "0.1", ControlColor::None, _numManualTempOutput);
     ESPUI.setElementStyle(_numManualTempOutput, STYLE_NUM_INOUT_MANUAL_INPUT);
     _swManualTempOutput = ESPUI.addControl(
         ControlType::Switcher, NO_VALUE, String(config->temperatureConfig->isManualOutputTemp() ? 1 : 0), ControlColor::None, outputTempGrp,
@@ -111,7 +109,7 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
         [](Control *sender, int type, void *UserInfo)
         {
             Webinterface *instance = static_cast<Webinterface *>(UserInfo);
-            if(sender->value.isEmpty())
+            if(sender->value.isEmpty() || sender->value.toInt() < MIN_POWER_LIMIT)
                 ESPUI.updateNumber(sender->id, instance->_config->powerConfig->getManualPower());
             else
                 ESPUI.updateNumber(sender->id, instance->_config->powerConfig->setManualPower(sender->value.toInt()));
@@ -331,24 +329,20 @@ AdjustmentTab::AdjustmentTab(Config *config) : _config(config)
     {
         auto adj = config->temperatureConfig->getAdjustment(i);
         auto numAdjTemp = ESPUI.addControl(
-             Number, NO_VALUE, String(adj->getTemperatureOffset()), ControlColor::None, tmpAdjGrp,
+             Number, NO_VALUE, String(adj->getTemperatureOffset(), 1), ControlColor::None, tmpAdjGrp,
              [](Control *sender, int type, void *UserInfo)
              {
                 TemperatureAdjustment *instance = static_cast<TemperatureAdjustment *>(UserInfo);
                 if(sender->value.isEmpty())
-                    ESPUI.updateNumber(sender->id, instance->getTemperatureOffset());
+                    ESPUI.updateControlValue(sender->id, String(instance->getTemperatureOffset(), 1));
                 else
-                    ESPUI.updateNumber(sender->id, instance->setTemperatureOffset(sender->value.toInt()));
+                    ESPUI.updateControlValue(sender->id, String(instance->setTemperatureOffset(sender->value.toFloat()), 1));
                 ESPUI.setElementStyle(sender->id, STYLE_NUM_TEMP_ADJUST_NORMAL);
              },
              adj);
-        
         ESPUI.setElementStyle(numAdjTemp, STYLE_NUM_TEMP_ADJUST_NORMAL);
-    
-        auto lblCtl = ESPUI.addControl(ControlType::Label, NO_VALUE, "°C offset at " + String(adj->tempReal) + " °C", ControlColor::None, tmpAdjGrp);
-        ESPUI.setElementStyle(lblCtl, STYLE_LBL_ADJUST);
+        ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "°C offset at " + String(adj->tempReal) + " °C", ControlColor::None, tmpAdjGrp), STYLE_LBL_ADJUST);
     }
-
 
     auto pwrAdjGrp = ESPUI.addControl(ControlType::Label, "Power Adjustment", NO_VALUE, ControlColor::None, _tab);
     ESPUI.setElementStyle(pwrAdjGrp, STYLE_HIDDEN);
@@ -367,28 +361,28 @@ AdjustmentTab::AdjustmentTab(Config *config) : _config(config)
 PowerAreaTab::PowerAreaTab(const uint16_t groupCtlId, PowerArea *config) : _config(config)
 {    
     _numEnd = ESPUI.addControl(
-        ControlType::Number, NO_VALUE, String(config->getEnd()), ControlColor::None, groupCtlId,
+        ControlType::Number, NO_VALUE, String(config->getEnd(), 1), ControlColor::None, groupCtlId,
         [](Control *sender, int type, void *UserInfo)
         {
             PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
             if(sender->value.isEmpty())
-                ESPUI.updateNumber(sender->id, instance->_config->getEnd());
+                ESPUI.updateControlValue(sender->id, String(instance->_config->getEnd(), 1));
             else
-                ESPUI.updateNumber(sender->id, instance->_config->setEnd(sender->value.toInt()));
+                ESPUI.updateControlValue(sender->id, String(instance->_config->setEnd(sender->value.toFloat()), 1));
             instance->updateStatus();
         },
         this);
     ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "°C   -", ControlColor::None, groupCtlId), "background-color: unset; text-align: left; width: 12.5%;");
         
     _numStart = ESPUI.addControl(
-        ControlType::Number, NO_VALUE, String(config->getStart()), ControlColor::None, groupCtlId,
+        ControlType::Number, NO_VALUE, String(config->getStart(), 1), ControlColor::None, groupCtlId,
         [](Control *sender, int type, void *UserInfo)
         {
             PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
             if(sender->value.isEmpty())
-                ESPUI.updateNumber(sender->id, instance->_config->getStart());
+                ESPUI.updateControlValue(sender->id, String(instance->_config->getStart(), 1));
             else
-                ESPUI.updateNumber(sender->id, instance->_config->setStart(sender->value.toInt()));
+                ESPUI.updateControlValue(sender->id, String(instance->_config->setStart(sender->value.toFloat()), 1));
             instance->updateStatus();
         },
         this);
@@ -399,7 +393,7 @@ PowerAreaTab::PowerAreaTab(const uint16_t groupCtlId, PowerArea *config) : _conf
         [](Control *sender, int type, void *UserInfo)
         {
             PowerAreaTab *instance = static_cast<PowerAreaTab *>(UserInfo);
-            if(sender->value.isEmpty())
+            if(sender->value.isEmpty() || sender->value.toInt() < MIN_POWER_LIMIT)
                 ESPUI.updateNumber(sender->id, instance->_config->getPowerLimit());
             else
                 ESPUI.updateNumber(sender->id, instance->_config->setPowerLimit(sender->value.toInt()));
@@ -414,8 +408,8 @@ PowerAreaTab::PowerAreaTab(const uint16_t groupCtlId, PowerArea *config) : _conf
 
 void PowerAreaTab::update()
 {
-    ESPUI.updateNumber(_numStart, _config->getStart());
-    ESPUI.updateNumber(_numEnd, _config->getEnd());
+    ESPUI.updateControlValue(_numStart, String(_config->getStart(), 1));
+    ESPUI.updateControlValue(_numEnd, String(_config->getEnd(), 1));
     ESPUI.updateNumber(_numLimit, _config->getPowerLimit());
     updateStatus();
 }

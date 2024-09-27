@@ -34,7 +34,7 @@ class TemperatureAdjustment
 {
 private:
     Preferences *_preferences;    
-    int8_t _tempOffset;         // Temperature offset
+    float _tempOffset;          // Temperature offset
 
 protected:
 public:
@@ -45,15 +45,15 @@ public:
     TemperatureAdjustment(int8_t tempReal, Preferences *preferences);
 
     /// @brief Gets the adjusted temperature
-    int8_t getTemperatureAdjusted() { return tempReal + _tempOffset; };
+    float getTemperatureAdjusted() { return tempReal + _tempOffset; };
 
     /// @brief Gets the temperature offset
-    int8_t getTemperatureOffset() { return _tempOffset; };
+    float getTemperatureOffset() { return _tempOffset; };
 
     /// @brief Sets the temperature offset to calculate the adjusted temperature
     /// @param offset the new offset
     /// @return the saved temperature offset after limit checks
-    int8_t setTemperatureOffset(int8_t offset);
+    float setTemperatureOffset(float offset);
 };
 
 /// @brief Holds the temperature configuration
@@ -171,14 +171,13 @@ class PowerArea
 private:
     PowerConfig *_config;
     Preferences *_preferences;
-    int8_t _start;
-    int8_t _end;
+    float _start;
+    float _end;
     uint8_t _powerLimit;
 
 protected:
 public:
     const size_t index;
-    const String name;
 
     /// @brief Creates a new instance of an PowerArea
     /// @param index unique area index
@@ -198,20 +197,20 @@ public:
     bool isValid();
 
     /// @brief Gets the start temperature of the area
-    int8_t getStart() { return _start; };
+    float getStart() { return _start; };
 
     /// @brief Sets the start temperature of the area
     /// @param start defines the start temperature of the area
     /// @return the new value after limit check
-    int8_t setStart(int8_t start);
+    float setStart(float start);
 
     /// @brief Gets the end temperature of the area
-    int8_t getEnd() { return _end; };
+    float getEnd() { return _end; };
 
     /// @brief Sets the start temperature of the area
     /// @param end defines the end temperature of the area
     /// @return the new value after limit check
-    int8_t setEnd(int8_t end);
+    float setEnd(float end);
 
     /// @brief Gets the powerlimit of the area
     uint8_t getPowerLimit() { return _powerLimit; }
