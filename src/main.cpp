@@ -183,7 +183,7 @@ bool updateWeatherApiTemperature()
 			LOG_ERROR(F("Main"), F("updateWeatherApiTemperature"), F("Error on update temperature by weather API (WiFi not connected)"));
 			break;
 		case Error::HttpError:
-			LOG_ERROR(F("Main"), F("updateWeatherApiTemperature"), F("Error on update temperature by weather API (HTTP error) " + request.httpCode));
+			LOG_ERROR(F("Main"), F("updateWeatherApiTemperature"), F("Error on update temperature by weather API (HTTP error) ") + request.httpCode);
 			break;
 		case Error::DeserializationFailed:
 			LOG_ERROR(F("Main"), F("updateWeatherApiTemperature"), F("Error on update temperature by weather API (Deserialization failed)"));
@@ -193,6 +193,10 @@ bool updateWeatherApiTemperature()
 		_timers.every(WEATHER_API_UPDATE_CYCLE_FAILED, updateWeatherApiTemperatureTick);
 		return false;
 	}
+
+#ifdef LOG_INFO
+	LOG_INFO(F("Main"), F("updateWeatherApiTemperature"), F("Updated temperature by weather API ") + request.temperature);
+#endif
 
 	_timers.every(WEATHER_API_UPDATE_CYCLE, updateWeatherApiTemperatureTick);
 	bool changed = _weatherApiTemperature != request.temperature;
@@ -488,10 +492,35 @@ void setupWifiManager()
 
 	WifiModeChamp.setReconnectTimeout(120);
     WifiModeChamp.setConnectTimeout(30);
-    WifiModeChamp.setWifiScanWaitTime(20);
+    WifiModeChamp.setWifiScanWaitTime(30);
 	WifiModeChamp.begin("T-Cap Champ", WIFI_CONFIG_PASSWORD);
+
+	auto configuredWifiSsid = WifiModeChamp.getConfiguredWiFiSSID();
+	if(configuredWifiSsid.isEmpty() || configuredWifiSsid.length() < 1)
+	{
 #ifdef LOG_DEBUG
-	LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Successfuly connected to WiFi"));
+	LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Skip waiting for initial WiFi connection since no WiFi is configured"));
+#endif
+		return;
+	}
+
+#ifdef LOG_DEBUG
+	LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Waiting for initial WiFi connection..."));
+#endif
+	auto connectDelay = 10;
+	auto connectTimeout = 15000;
+	while (connectTimeout > 0 && WiFi.status() != WL_CONNECTED)
+	{
+		WifiModeChamp.loop();
+		delay(connectDelay);
+		connectTimeout -= connectDelay;
+	}
+
+#ifdef LOG_DEBUG
+	if(WiFi.status() != WL_CONNECTED)
+		LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Initial connection to WiFi failed"));
+	else
+		LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Successfuly connected to WiFi"));
 #endif
 }
 
