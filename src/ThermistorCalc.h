@@ -8,6 +8,9 @@
 class ThermistorCalc
 {
 private:
+    double _coefficientA;
+    double _coefficientB;
+    double _coefficientC;
 protected:
 public:
     /// @brief Creates an instance of the calculator
@@ -42,10 +45,10 @@ public:
     /// @brief Converts the temperature [celsius] into temperature [kelvin]
     /// @param celsius The temperature in [celsius]
     /// @return The temperature in [kelvin]
-    static const double celsiusToKelvin(double celsius);
+    const double celsiusToKelvin(double celsius);
 
     /// @brief Converts the temperature [kelvin] into temperature [celsius]
     /// @param kelvin The temperature in [kelvin]
     /// @return The temperature in [celsius]
-    static const double kelvinToCelsius(double kelvin);
+    const double kelvinToCelsius(double kelvin);
 };

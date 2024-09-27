@@ -2,6 +2,7 @@
 
 #include <HTTPClient.h>
 
+/// @brief API request error type
 enum Error 
 {
     /// @brief No error / request successful

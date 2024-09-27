@@ -1,13 +1,6 @@
 #include <math.h>
 #include "ThermistorCalc.h"
 
-static const double OFFSET_KELVIN = 273.15;
-static const double ONE_THIRD = 1.0 / 3.0;
-
-double _coefficientA;
-double _coefficientB;
-double _coefficientC;
-
 ThermistorCalc::ThermistorCalc(int cLow, int rLow, int cMid, int rMid, int cHigh, int rHigh)
 {
     double lnR1 = log(rLow);
@@ -34,7 +27,8 @@ const double ThermistorCalc::resistanceFromKelvin(double kelvin)
 {
     double alpha = (_coefficientA - (1 / kelvin)) / _coefficientC;
     double beta = sqrt(pow((_coefficientB / (3 * _coefficientC)), 3) + (pow(alpha, 2)) / 4);
-    return exp(pow(beta - (alpha / 2), ONE_THIRD) - pow(beta + (alpha / 2), ONE_THIRD));
+    double oneThird = 1.0 / 3.0;
+    return exp(pow(beta - (alpha / 2), oneThird) - pow(beta + (alpha / 2), oneThird));
 }
 
 const double ThermistorCalc::resistanceFromCelsius(double celsius)
@@ -55,10 +49,10 @@ const double ThermistorCalc::celsiusFromResistance(double resistance)
 
 const double ThermistorCalc::celsiusToKelvin(double celsius)
 {
-    return celsius + OFFSET_KELVIN;
+    return celsius + 273.15;
 }
 
 const double ThermistorCalc::kelvinToCelsius(double kelvin)
 {
-    return kelvin - OFFSET_KELVIN;
+    return kelvin - 273.15;
 }

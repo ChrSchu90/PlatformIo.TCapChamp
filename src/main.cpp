@@ -14,21 +14,36 @@
 #include "Secrets.h"
 #include "SerialLogging.h"
 
-Timer<6, millis> _timers;	 // Timer collection for time based operations
-Config *_config;			 // Access to the configuration
-Webinterface *_webinterface; // Access to the webinterface
-
-#pragma region Input_Temperature_Sensor
-
 static const uint8_t GPIO_THERMISTOR_IN = GPIO_NUM_36;										// GPIO used for real input temperature from thermistor
+static const uint8_t SPI_BUS_THERMISTOR_OUT = VSPI;											// SPI bus used for digital potentiometer for output temperature
+static const uint8_t GPIO_FAILOVER_OUT = GPIO_NUM_27;										// GPIO used as digital output to signal that the output is now valid (failover via relays or LED)
 static const float SUPPLY_VOLTAGE = 3.3;													// Maximum Voltage ADC input
 static const unsigned int TEMP_IN_DEVIDER_RESISTANCE = 10000;								// Voltage divider resistor value for input temperature in Ohm
 static const unsigned int TEMP_IN_SAMPLE_CYCLE = 10;										// Sample rate to build the median in milliseconds
 static const unsigned int TEMP_IN_UPDATE_CYCLE = 1000;										// Update every n ms the input temperature
 static const unsigned int TEMP_IN_SAMPLE_CNT = TEMP_IN_UPDATE_CYCLE / TEMP_IN_SAMPLE_CYCLE; // Amount of samples for input thermistor median calculation
-RunningMedian _thermistorInMedian(TEMP_IN_SAMPLE_CNT);										// Median average calculation for input temperature sensor
-ThermistorCalc _thermistorIn(-40, 167820, 25, 6523, 120, 302);								// Input for real temperature (Panasonic PAW-A2W-TSOD)
-float _thermistorInTemperature = NAN;														// Last temperature from input sensor (NAN if not available)
+static const unsigned int WEATHER_API_UPDATE_CYCLE = 600000;	   							// Update time of the temperture by the weather API in milliseconds
+static const unsigned int WEATHER_API_UPDATE_CYCLE_FAILED = 10000; 							// Update time of the temperture by the weather API if the request has failed in milliseconds
+static const unsigned int TEMP_OUT_UPDATE_CYCLE = 1000;										// Update time of the output temperature in milliseconds
+static const uint16_t DIGI_POTI_STEPS = 256;												// Maximum amount of steps that the digital potentiometer supports
+static const uint16_t DIGI_POTI_STEP_MIN = 0;												// Minimum step of the digital potentiometer to limit maximum current (if no pre-resistor is used)
+static const float DIGI_POTI_RESISTANCE = 50000.0f;											// Maximum resistance of the digital potentiometer in Ohm
+static const float DIGI_POTI_PRERESISTANCE = 5000.0f;										// Digital potentiometer pre-resistor to limit current and improve precision in Ohm
+static const unsigned int POWER_OUT_UPDATE_CYCLE = 1000; 									// Update time of the output temperature in milliseconds
+
+ThermistorCalc _thermistorIn(-40, 167820, 25, 6523, 120, 302);	// Input for real temperature (Panasonic PAW-A2W-TSOD)
+ThermistorCalc _thermistorOut(-40, 167820, 25, 6523, 120, 302); // Output that simulates a Panasonic PAW-A2W-TSOD for the Panasonic T-Cap
+RunningMedian _thermistorInMedian(TEMP_IN_SAMPLE_CNT);			// Median average calculation for input temperature sensor
+DFRobot_GP8403 *_i2cDac;										// DFRobot DAC for power limit (nullptr if not available)
+SPIClass *_spiDigitalPoti;										// Digital potentiometer SPI interface
+OpenWeatherMap *_weatherApi;									// OpenWeatherMap API access
+Webinterface *_webinterface; 									// Access to the webinterface
+Timer<6, millis> _timers;	 									// Timer collection for time based operations
+Config *_config;			 									// Access to the configuration
+float _thermistorInTemperature = NAN;							// Last temperature from input sensor (NAN if not available)
+float _weatherApiTemperature = NAN;								// Last temperature from weather API (NAN if not available)
+float _outputTemperature = NAN;									// Last output temperature (NAN if no temperature could be calculated)
+uint8_t _powerLimitPercent = 0;									// Last powerlimit in percent (<10 means disabled)
 
 /// @brief Reads the ADC voltage with none linear compensation (maximum reading 3.3V range from 0 to 4095)
 float readAdcVoltageCorrected(uint8_t gpioPin)
@@ -144,15 +159,6 @@ void setupThermistorInputReading()
 #endif
 }
 
-#pragma endregion Input_Temperature_Sensor
-
-#pragma region Weather_API
-
-static const unsigned int WEATHER_API_UPDATE_CYCLE = 600000;	   // Update time of the temperture by the weather API in milliseconds
-static const unsigned int WEATHER_API_UPDATE_CYCLE_FAILED = 10000; // Update time of the temperture by the weather API if the request has failed in milliseconds
-OpenWeatherMap *_weatherApi;									   // OpenWeatherMap API access
-float _weatherApiTemperature = NAN;								   // Last temperature from weather API (NAN if not available)
-
 /// @brief Update Weather API temperature timer callback
 /// NOTE: The timer registration is handled by updateWeatherApiTemperature since
 /// based on the API response the timer will be restarted with different ticks
@@ -255,8 +261,6 @@ void setupWeatherApi()
 	}
 }
 
-#pragma endregion Weather_API
-
 /// @brief Gets the real input temperature that is used to calculate the power limit and output temperature
 /// @attention Priority: 1st Nanual Temperature, 2nd Weather API, 3rd fallback to Nanual Temperature and NAN if it is not possible to determine a input temperature
 /// @return The input temperature or NAN if it is not possible to determine one
@@ -289,19 +293,6 @@ float getInputTemperature()
 	// It is not possible to determine a input temperature
 	return NAN;
 }
-
-#pragma region Output_Temperature_Sensor
-
-static const uint8_t SPI_BUS_THERMISTOR_OUT = VSPI;				// SPI bus used for digital potentiometer for output temperature
-static const uint8_t GPIO_FAILOVER_OUT = GPIO_NUM_27;			// GPIO used as digital output to signal that the output is now valid (failover via relays or LED)
-static const unsigned int TEMP_OUT_UPDATE_CYCLE = 1000;			// Update time of the output temperature in milliseconds
-static const uint16_t DIGI_POTI_STEPS = 256;					// Maximum amount of steps that the digital potentiometer supports
-static const uint16_t DIGI_POTI_STEP_MIN = 0;					// Minimum step of the digital potentiometer to limit maximum current (if no pre-resistor is used)
-static const float DIGI_POTI_RESISTANCE = 50000.0f;				// Maximum resistance of the digital potentiometer in Ohm
-static const float DIGI_POTI_PRERESISTANCE = 5000.0f;			// Digital potentiometer pre-resistor to limit current and improve precision in Ohm
-ThermistorCalc _thermistorOut(-40, 167820, 25, 6523, 120, 302); // Output that simulates a Panasonic PAW-A2W-TSOD for the Panasonic T-Cap
-SPIClass *_spiDigitalPoti;										// Digital potentiometer SPI interface
-float _outputTemperature = NAN;									// Last output temperature (NAN if no temperature could be calculated)
 
 /// @brief Updates the _outputTemperature based on getInputTemperature()
 /// @return If the value has changed
@@ -368,14 +359,6 @@ void setupOutputTemperature()
 #endif
 }
 
-#pragma endregion Output_Temperature_Sensor
-
-#pragma region Output_Power_Limit
-
-static const unsigned int POWER_OUT_UPDATE_CYCLE = 1000; // Update time of the output temperature in milliseconds
-DFRobot_GP8403 *_i2cDac;
-uint8_t _powerLimitPercent = 0;
-
 /// @brief Sets the powerlimit via DAC 0-10V, updates the _powerLimitPercent and webinterface
 /// @attention T-Cap need at least a 10% power limit, less is detected as disabled demand control
 /// @param percent The new power limit in %
@@ -441,8 +424,6 @@ void setupPowerLimit()
 			});
 	}
 }
-
-#pragma endregion Output_Power_Limit
 
 /// @brief Put your main code here, to run repeatedly:
 void loop()
