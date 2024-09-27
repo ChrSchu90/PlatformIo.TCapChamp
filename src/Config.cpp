@@ -27,7 +27,7 @@ TemperatureConfig::TemperatureConfig(Preferences *preferences) : _preferences(pr
 {
     // Check limit and round to 0.1
     _manualOutputActive = preferences->getBool(KEY_SETTING_TEMP_MANUAL_OUT_MODE, false);
-    _manualOutputTemperature = preferences->getFloat(KEY_SETTING_TEMP_MANUAL_OUT_TEMP, 15.0f);
+    _manualOutputTemperature = preferences->getFloat(KEY_SETTING_TEMP_MANUAL_OUT_TEMP, 10.0f);
 
     _manualInputActive = preferences->getBool(KEY_SETTING_TEMP_MANUAL_IN_MODE, false);
     _manualInputTemperature = preferences->getFloat(KEY_SETTING_TEMP_MANUAL_IN_TEMP, 15.0f);
