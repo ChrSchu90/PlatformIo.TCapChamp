@@ -34,7 +34,7 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
     _lblWeatherTemp = ESPUI.addControl(ControlType::Label, "Weather API", String(NAN) + " °C", ControlColor::None, inputTempGrp);
     ESPUI.setElementStyle(_lblWeatherTemp, STYLE_LBL_INOUT);
 
-    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Manual", ControlColor::None, inputTempGrp), STYLE_SWITCH_INOUT_MANUAL_ENABLE);
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Manual (fallback if no input available)", ControlColor::None, inputTempGrp), STYLE_SWITCH_INOUT_MANUAL_ENABLE);
     _swManualTempInput = ESPUI.addControl(
         ControlType::Switcher, NO_VALUE, String(config->temperatureConfig->isManualInputTemp() ? 1 : 0), ControlColor::None, inputTempGrp,
         [](Control *sender, int type, void *UserInfo)
@@ -70,7 +70,7 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
     _lblTempOutput = ESPUI.addControl(ControlType::Label, NO_VALUE, String(NAN) + " °C", ControlColor::None, outputTempGrp);
     ESPUI.setElementStyle(_lblTempOutput, STYLE_LBL_INOUT);
 
-    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Manual (fallback if no input available)", ControlColor::None, outputTempGrp), STYLE_SWITCH_INOUT_MANUAL_ENABLE);
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Manual", ControlColor::None, outputTempGrp), STYLE_SWITCH_INOUT_MANUAL_ENABLE);
     _swManualTempOutput = ESPUI.addControl(
         ControlType::Switcher, NO_VALUE, String(config->temperatureConfig->isManualOutputTemp() ? 1 : 0), ControlColor::None, outputTempGrp,
         [](Control *sender, int type, void *UserInfo)

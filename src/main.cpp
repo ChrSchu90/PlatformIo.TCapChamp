@@ -291,7 +291,7 @@ float getInputTemperature()
 	// Use the manual temperature as fallback if no API or input sensor value is available
 	if (_config)
 	{
-		return _config->temperatureConfig->getManualOutputTemperature();
+		return _config->temperatureConfig->getManualInputTemperature();
 	}
 
 	// It is not possible to determine a input temperature
