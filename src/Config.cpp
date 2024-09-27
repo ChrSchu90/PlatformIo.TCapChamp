@@ -108,12 +108,14 @@ float TemperatureConfig::getOutputTemperature(float inputTemp)
 
     if(inputTemp > ADJUST_TEMP_START)
     {
-        return ADJUST_TEMP_START;
+        auto adj = _adjustments[0];
+        return min(adj->getTemperatureAdjusted() - adj->tempReal + inputTemp, (float)MAX_TEMPERATURE);
     }
 
     if(inputTemp < ADJUST_TEMP_END)
     {
-        return ADJUST_TEMP_END;
+        auto adj = _adjustments[TEMP_ADJUST_AMOUNT - 1];
+        return max(adj->getTemperatureAdjusted() - adj->tempReal + inputTemp, (float)MIN_TEMPERATURE);
     }
 
     int8_t upperIn = ceil(inputTemp); 
