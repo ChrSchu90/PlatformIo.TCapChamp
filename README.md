@@ -19,6 +19,7 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 | Weather API for input temperature                | &#10003;  |
 | 0V-10V Demand control                            | &#10003;  |
 | OTA Updates                                      | &#10003;  |
+| Captive Portal for initial WiFi configuration    | &#10003;  |
 | Custom webinterface for better accessibility     | &#10007;  |
 
 
@@ -30,7 +31,7 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 | [Electrical wire](https://www.amazon.de/dp/B08BZKR22W)     | &#10003; |                                                                               |
 | [Prototype Board](https://www.amazon.de/dp/B08F2TS7ZC)     | &#10003; | For final board                                                               |
 | 10k resistor                                               | &#10003; | Voltage devider for input sensor                                              |
-| 5k resistor                                                | &#10003; | Pre-Resistor for Digital potentiometer (defines the possible output temperature, in my case +30°C to -20°C) |
+| 5k resistor                                                | &#10003; | Pre-Resistor for Digital potentiometer (defines the possible output temperature, in my case +30°C to -20°C |
 | [DFRobot Gravity I2C DAC Module](https://www.dfrobot.com/product-2613.html)      | &#10007; | Optional I2C DAC 0-10V for Demand Control                                                   |
 | [Breadboard Kit](https://www.amazon.de/dp/B0B18G3V5T)      | &#10007; | Prototype Board for testing                                                   |
 | [Connectors](https://www.amazon.de/dp/B087RN8FDZ)          | &#10007; | Connector for wires                                                           |
@@ -93,6 +94,15 @@ To do so you can define temperature areas and its power limit inside the UI.
 <img src="Documentation/Screenshots/ExamplePowerLimit.jpg" alt="drawing" width="300" />
 
 <img src="Documentation/T-Cap Manual/DemandControl.jpg" alt="drawing" width="465" />
+
+## 3rd Party libraries
+The following libraries are used by this project (Thank you very much!)
+- [ESPUI](https://github.com/s00500/ESPUI) for webinterface
+- [RunningMedian](https://github.com/RobTillaart/RunningMedian) calculation for input temperature sensor
+- [arduino-timer](https://github.com/contrem/arduino-timer) for time based functions
+- [MycilaESPConnect](https://github.com/mathieucarbou/MycilaESPConnect) inspiration for WiFi AP/Client switching
+- [ADC-Accuracy](https://github.com/G6EJD/ESP32-ADC-Accuracy-Improvement-function) ADC accuracy improvement
+- [DFRobot_GP8403](https://github.com/DFRobot/DFRobot_GP8403) I2C DAC Module
 
 ## License
 This project is licensed under [MIT license](LICENSE).
