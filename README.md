@@ -59,8 +59,45 @@ You can find the the electrical drawings and parts inside `Documentation\Fritzin
 <img src="Documentation/Screenshots/Webinterface_Adjustment.jpg" alt="drawing" width="300" />
 
 <img src="Documentation/Screenshots/Webinterface_SystemInfo.jpg" alt="drawing" width="300" />
-
 <img src="Documentation/Screenshots/Webinterface_WiFiInfo.jpg" alt="drawing" width="300" />
+
+## Temperature Adjustment
+
+### The cheap solution
+A common way to manipulate the temperature is to connect a parallel resistor (e.g. 75k Ω) to the external sensor. The problem with this approach is that a thermal resistor isn't a linear resistor and because of that the temperature offset increases as the real temperature goes down:
+<img src="Documentation/Screenshots/ParallelResistorChart.jpg" alt="drawing" width="450" />
+
+### The good solution
+Due to that problem this project has been started to provide a more granular and comfortable way, without changing hardware if another offset is required. 
+
+It also makes it a lot easier at the beginning, since first you need to figure out what offset is the best based on your environment and preferences. To do so you can control input and output temperatures manually until you know where your sweetspot is. Afterwards the controller manipulates the output temperature based on a input temperature fully automated.
+
+<img src="Documentation/Screenshots/Example1Configuration.jpg" alt="drawing" width="85" />
+<img src="Documentation/Screenshots/Example1Chart.jpg" alt="drawing" width="375" />
+
+> **Note**
+> Keep in mind that the used components are not perfect and have tolerances!
+> The output values are calculated and may not match the temperature that
+> the T-Cap will read. You can use the T-Cap sensor calibration (+/- 2°C)
+> to compensate the tolerances.
+
+<img src="Documentation/Screenshots/DeltaTargetToOutputChart.jpg" alt="drawing" width="465" />
+
+## Demand Control (optional)
+The T-Cap provides a 0-10V analog input to limit the power consumption. It can be a handy tool to optimize the heat pump even more as what is possible only by temperature adjustments.
+
+To do so you can define temperature areas and its power limit inside the UI.
+
+> **Note**
+> The first matching area will be uses (top to buttom). In case no responsable
+> area will be found the output will be set to 0V (not active).
+> If you like to define a default limit place the value inside the last area
+> with start 30°C and end -20°C and define specific areas above.
+> To deactivate areas set start and end temperature to the same value.
+
+<img src="Documentation/Screenshots/ExamplePowerLimit.jpg" alt="drawing" width="300" />
+
+<img src="Documentation/T-Cap Manual/DemandControl.jpg" alt="drawing" width="465" />
 
 ## License
 This project is licensed under [MIT license](LICENSE).
