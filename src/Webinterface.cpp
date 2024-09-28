@@ -247,35 +247,24 @@ SystemInfoTab::SystemInfoTab()
             SystemInfoTab *instance = static_cast<SystemInfoTab *>(UserInfo);
             instance->update();
             instance->_rebootCnt = REBOOT_CLICK_CNT;
-            ESPUI.updateButton(instance->_btnReboot, "Press " + String(instance->_rebootCnt) + " times");
+            ESPUI.updateButton(instance->_btnReboot, "Restart " + String(instance->_rebootCnt));
         },
         this);
 
-    _heapSize = ESP.getHeapSize();
-    _flashSize = ESP.getFlashChipSize();
-    _sketchSize = ESP.getFreeSketchSpace() + ESP.getSketchSize();
+    // Performance group
+    _lblPerformance = ESPUI.addControl(ControlType::Label, "Performance", NO_VALUE, ControlColor::None, _tab);
+    ESPUI.setElementStyle(_lblPerformance, "background-color: unset; text-align-last: left;");
 
-    _lblUptime = ESPUI.addControl(ControlType::Label, "Performance", NO_VALUE, ControlColor::None, _tab);
-    _lblHeapUsage = ESPUI.addControl(ControlType::Label, "Heap Usage", NO_VALUE, ControlColor::None, _lblUptime);
-    _lblHeapAllocatedMax = ESPUI.addControl(ControlType::Label, "Heap Allocated Max", NO_VALUE, ControlColor::None, _lblUptime);
-    _lblSketch = ESPUI.addControl(ControlType::Label, "Sketch Used", NO_VALUE, ControlColor::None, _lblUptime);
-    _lblTemperature = ESPUI.addControl(ControlType::Label, "Temperature", NO_VALUE, ControlColor::None, _lblUptime);
-
-    auto lblDevice = ESPUI.addControl(ControlType::Label, "Device", "Model: " + String(ESP.getChipModel()), ControlColor::None, _tab);
-    ESPUI.addControl(ControlType::Label, "Flash", "Flash: " + String(_flashSize), ControlColor::None, lblDevice);
-    ESPUI.addControl(ControlType::Label, "Freq", "Freq: " + String(ESP.getCpuFreqMHz()) + " MHz", ControlColor::None, lblDevice);
-    ESPUI.addControl(ControlType::Label, "Cores", "Cores: " + String(ESP.getChipCores()), ControlColor::None, lblDevice);
-    ESPUI.addControl(ControlType::Label, "Revision", "Revision: " + String(ESP.getChipRevision()), ControlColor::None, lblDevice);
-
-    auto lblSoftware = ESPUI.addControl(ControlType::Label, "Software", "Arduiono Verison: " + String(ESP_ARDUINO_VERSION_MAJOR) + "." + String(ESP_ARDUINO_VERSION_MINOR) + "." + String(ESP_ARDUINO_VERSION_PATCH), ControlColor::None, _tab);
-    ESPUI.addControl(ControlType::Label, "SDK", "SDK Verison: " + String(ESP.getSdkVersion()), ControlColor::None, lblSoftware);
-    ESPUI.addControl(ControlType::Label, "Build", "Build: " + String(__DATE__ " " __TIME__), ControlColor::None, lblSoftware);
-
-    auto lblOTA = ESPUI.addControl(ControlType::Label, "OTA Update", "<form method=""POST"" action=""/ota"" enctype=""multipart/form-data""><input type=""file"" name=""data"" style=""color:white;background-color:#999"" /><input type=""submit"" name=""upload"" value=""Upload"" title=""Upload Files"" style=""color:white;background-color:#999;width:100px;height:35px""></form>", ControlColor::None, _tab);
-    ESPUI.setElementStyle(lblOTA, "background-color: transparent; width: 100%;");
-
+    // Device info group
+    auto device = String("Model:\t ") + String(ESP.getChipModel()) + "\n" +
+                "Flash:\t " + String(ESP.getFlashChipSize()) + "\n" +
+                "Freq:\t " + String(ESP.getCpuFreqMHz()) + " MHz\n" +
+                "Cores:\t " + String(ESP.getChipCores()) + "\n" +
+                "Revision: " + String(ESP.getChipRevision());
+    auto lblDevice = ESPUI.addControl(ControlType::Label, "Device", device, ControlColor::None, _tab);
+    ESPUI.setElementStyle(lblDevice, "background-color: unset; text-align-last: left;");
     _btnReboot = ESPUI.addControl(
-        ControlType::Button, "Reboot", "Press " + String(_rebootCnt) + " times", Carrot, _tab,
+        ControlType::Button, NO_VALUE, "Restart " + String(_rebootCnt), ControlColor::None, lblDevice,
         [](Control *sender, int type, void *UserInfo)
         {
             if (type != B_DOWN)
@@ -290,9 +279,18 @@ SystemInfoTab::SystemInfoTab()
                 ESP.restart();
             }
 
-            ESPUI.updateButton(sender->id, "Press " + String(instance->_rebootCnt) + " times");
+            ESPUI.updateButton(sender->id, "Restart " + String(instance->_rebootCnt));
         },
         this);
+
+    // Software info group
+    auto software = String("Arduiono Verison:\t ") + String(ESP_ARDUINO_VERSION_MAJOR) + "." + String(ESP_ARDUINO_VERSION_MINOR) + "." + String(ESP_ARDUINO_VERSION_PATCH) + "\n" +
+                "SDK Verison:\t\t " + String(ESP.getSdkVersion()) + "\n" +
+                "Build:\t\t\t " + String(__DATE__ " " __TIME__);
+    auto lblSoftware = ESPUI.addControl(ControlType::Label, "Software", software, ControlColor::None, _tab);
+    ESPUI.setElementStyle(lblSoftware, "background-color: unset; text-align-last: left;");
+    auto lblOTA = ESPUI.addControl(ControlType::Label, NO_VALUE, "<form method=""POST"" action=""/ota"" enctype=""multipart/form-data""><input type=""file"" name=""data"" style=""color:white;background-color:#999"" /><input type=""submit"" name=""upload"" value=""Upload"" title=""Upload Files"" style=""color:white;background-color:#999;width:100px;height:35px""></form>", ControlColor::None, lblSoftware);
+    ESPUI.setElementStyle(lblOTA, "background-color: transparent; width: 100%;");
 
     update();
 }
@@ -308,18 +306,20 @@ void SystemInfoTab::update()
     seconds %= 60;
     minutes %= 60;
     hours %= 24;
-    ESPUI.updateLabel(_lblUptime, "Uptime: " + String(days) + "d " + String(hours) + "h " + String(minutes) + "m " + String(seconds) + "s");
 
     float freeHeap = ESP.getFreeHeap();
-    float usedHeap = _heapSize - freeHeap;
-    ESPUI.updateLabel(_lblHeapUsage, "Heap Usage: " + String(usedHeap, 0) + "/" + String(_heapSize) + " (" + String(usedHeap / _heapSize * 100.0f, 2) + " %)");
+    uint32_t heapSize = ESP.getHeapSize();
+    float usedHeap = heapSize - freeHeap;
     float maxUsedHeap = ESP.getMaxAllocHeap();
-    ESPUI.updateLabel(_lblHeapAllocatedMax, "Heap Allocated Max: " + String(maxUsedHeap, 0) + " (" + String(maxUsedHeap / _heapSize * 100.0f, 2) + " %)");
-
     float freeSketch = ESP.getFreeSketchSpace();
-    ESPUI.updateLabel(_lblSketch, "Sketch Used: " + String(_sketchSize - freeSketch, 0) + "/" + String(_sketchSize) + " (" + String(freeSketch / _sketchSize * 100.0f, 2) + " %)");
+    uint32_t sketchSize = freeSketch + ESP.getSketchSize();
 
-    ESPUI.updateLabel(_lblTemperature, "Temperature: " + String(temperatureRead()) + " °C");
+    auto performance = String("Uptime:\t\t\t\t") + String(days) + "d " + String(hours) + "h " + String(minutes) + "m " + String(seconds) + "s\n" +
+                "Heap Usage:\t\t\t" + String(usedHeap, 0) + "/" + String(heapSize) + " (" + String(usedHeap / heapSize * 100.0f, 2) + " %)\n" +
+                "Heap Allocated Max:\t" + String(maxUsedHeap, 0) + " (" + String(maxUsedHeap / heapSize * 100.0f, 2) + " %)\n" +
+                "Sketch Used:\t\t\t" + String(sketchSize - freeSketch, 0) + "/" + String(sketchSize) + " (" + String(freeSketch / sketchSize * 100.0f, 2) + " %)\n" +
+                "Temperature:\t\t\t" + String(temperatureRead(), 1) + " °C";
+    ESPUI.updateLabel(_lblPerformance, performance);
 }
 
 /*
@@ -452,14 +452,8 @@ WifiInfoTab::WifiInfoTab()
         },
         this);
 
-    _lblInfo = ESPUI.addControl(ControlType::Label, "Info", "Hostname: " + String(WiFi.getHostname()), ControlColor::None, _tab);
-    _lblMac = ESPUI.addControl(ControlType::Label, "MAC", NO_VALUE, ControlColor::None, _lblInfo);
-    _lblIp = ESPUI.addControl(ControlType::Label, "IP", NO_VALUE, ControlColor::None, _lblInfo);
-    _lblDns = ESPUI.addControl(ControlType::Label, "DNS", NO_VALUE, ControlColor::None, _lblInfo);
-    _lblGateway = ESPUI.addControl(ControlType::Label, "Gateway", NO_VALUE, ControlColor::None, _lblInfo);
-    _lblSubnet = ESPUI.addControl(ControlType::Label, "Subnet", NO_VALUE, ControlColor::None, _lblInfo);
-    _lblSsid = ESPUI.addControl(ControlType::Label, "SSID", NO_VALUE, ControlColor::None, _lblInfo);
-    _lblRssi = ESPUI.addControl(ControlType::Label, "RSSI", NO_VALUE, ControlColor::None, _lblInfo);
+    _lblInfoTest = ESPUI.addControl(ControlType::Label, "Info", NO_VALUE, ControlColor::None, _tab);
+    ESPUI.setElementStyle(_lblInfoTest, "background-color: unset; text-align-last: left;");
 
     auto lblWifiSettings = ESPUI.addControl(ControlType::Label, "WiFi Configuration", NO_VALUE, ControlColor::None, _tab);
     ESPUI.setElementStyle(lblWifiSettings, STYLE_HIDDEN);
@@ -629,13 +623,14 @@ void WifiInfoTab::updateBtnSaveState()
 
 void WifiInfoTab::update()
 {
-    ESPUI.updateLabel(_lblMac, "MAC: " + String(WiFi.macAddress()));
-    ESPUI.updateLabel(_lblIp, "IP: " + String(WiFi.localIP().toString()));
-    ESPUI.updateLabel(_lblDns, "DNS: " + String(WiFi.dnsIP().toString()));
-    ESPUI.updateLabel(_lblGateway, "Gateway: " + String(WiFi.gatewayIP().toString()));
-    ESPUI.updateLabel(_lblSubnet, "Subnet: " + String(WiFi.subnetMask().toString()));
-    ESPUI.updateLabel(_lblSsid, "SSID: " + String(WiFi.SSID()));
-
     auto rssi = WiFi.RSSI();
-    ESPUI.updateLabel(_lblRssi, "RSSI: " + String(rssi) + " db (" + String(WifiModeChampClass::wifiSignalQuality(rssi)) + " %)");
+    auto info = String("Hostname:\t") + WiFi.getHostname() + "\n" +
+                "MAC:\t\t" + WiFi.macAddress() + "\n" +
+                "IP:\t\t\t" + WiFi.localIP().toString() + "\n" +
+                "DNS:\t\t" + WiFi.dnsIP().toString() + "\n" +
+                "Gateway:\t" + WiFi.gatewayIP().toString() + "\n" +
+                "Subnet:\t\t" + WiFi.subnetMask().toString() + "\n" +
+                "SSID:\t\t" + WiFi.SSID() + "\n" +
+                "RSSI:\t\t" + String(rssi) + " db (" + String(WifiModeChampClass::wifiSignalQuality(rssi)) + " %)";
+    ESPUI.updateLabel(_lblInfoTest, info);
 }

@@ -28,14 +28,7 @@ private:
     static const int REBOOT_CLICK_CNT = 5;
     uint16_t _tab;
     uint16_t _btnReboot;
-    uint16_t _lblUptime;
-    uint16_t _lblHeapUsage;
-    uint16_t _lblHeapAllocatedMax;
-    uint16_t _lblSketch;
-    uint16_t _lblTemperature;
-    uint32_t _flashSize;
-    uint32_t _heapSize;
-    uint32_t _sketchSize;
+    uint16_t _lblPerformance;
     int _rebootCnt = REBOOT_CLICK_CNT;
 
 protected:
@@ -61,14 +54,7 @@ class WifiInfoTab
 private:
     static const int16_t AmountWiFiOptions = 8;
     uint16_t _tab;
-    uint16_t _lblInfo;
-    uint16_t _lblMac;
-    uint16_t _lblIp;
-    uint16_t _lblDns;
-    uint16_t _lblGateway;
-    uint16_t _lblSubnet;
-    uint16_t _lblSsid;
-    uint16_t _lblRssi;
+    uint16_t _lblInfoTest;
     uint16_t _selSsid;
     uint16_t _txtSsid;
     uint16_t _txtPassword;

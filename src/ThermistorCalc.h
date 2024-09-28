@@ -45,10 +45,10 @@ public:
     /// @brief Converts the temperature [celsius] into temperature [kelvin]
     /// @param celsius The temperature in [celsius]
     /// @return The temperature in [kelvin]
-    const double celsiusToKelvin(double celsius);
+    static const double celsiusToKelvin(double celsius);
 
     /// @brief Converts the temperature [kelvin] into temperature [celsius]
     /// @param kelvin The temperature in [kelvin]
     /// @return The temperature in [celsius]
-    const double kelvinToCelsius(double kelvin);
+    static const double kelvinToCelsius(double kelvin);
 };
