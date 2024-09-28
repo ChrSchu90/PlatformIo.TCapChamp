@@ -47,13 +47,14 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
         },
         this);
     ESPUI.setElementStyle(_numManualTempInput, STYLE_NUM_INOUT_MANUAL_INPUT);
+    //ESPUI.addControl(ControlType::Step, NO_VALUE, "0.1", ControlColor::None, _numManualTempInput);
     _swManualTempInput = ESPUI.addControl(
         ControlType::Switcher, NO_VALUE, String(config->temperatureConfig->isManualInputTemp() ? 1 : 0), ControlColor::None, inputTempGrp,
         [](Control *sender, int type, void *UserInfo)
         {
             Webinterface *instance = static_cast<Webinterface *>(UserInfo);
             ESPUI.updateSwitcher(sender->id, instance->_config->temperatureConfig->setManualInputActive(sender->value.toInt() > 0));
-            //instance->updateStatus(); // TODO: show enable disable manual input temp?
+            //instance->updateStatus();
         },
         this);
     ESPUI.setElementStyle(_swManualTempInput, STYLE_SWITCH_INOUT);
@@ -86,13 +87,14 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
         },
         this);
     ESPUI.setElementStyle(_numManualTempOutput, STYLE_NUM_INOUT_MANUAL_INPUT);
+    //ESPUI.addControl(ControlType::Step, NO_VALUE, "0.1", ControlColor::None, _numManualTempOutput);
     _swManualTempOutput = ESPUI.addControl(
         ControlType::Switcher, NO_VALUE, String(config->temperatureConfig->isManualOutputTemp() ? 1 : 0), ControlColor::None, outputTempGrp,
         [](Control *sender, int type, void *UserInfo)
         {
             Webinterface *instance = static_cast<Webinterface *>(UserInfo);
             ESPUI.updateSwitcher(sender->id, instance->_config->temperatureConfig->setManualOutputActive(sender->value.toInt() > 0));
-            //instance->updateStatus(); // TODO: show enable disable manual output temp?
+            //instance->updateStatus();
         },
         this);
     ESPUI.setElementStyle(_swManualTempOutput, STYLE_SWITCH_INOUT);    

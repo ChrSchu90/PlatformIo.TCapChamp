@@ -304,12 +304,12 @@ float getInputTemperature()
 bool updateOutputTemperature()
 {
 	float inputTemperature = getInputTemperature();
-	float targetTemp = _config->temperatureConfig->getOutputTemperature(inputTemperature);
+	_targetTemperature = _config->temperatureConfig->getOutputTemperature(inputTemperature);
 
 	bool changed = false;
-	if (!isnanf(targetTemp))
+	if (!isnanf(_targetTemperature))
 	{
-		float targetResistance = _thermistorOut.resistanceFromCelsius(targetTemp);
+		float targetResistance = _thermistorOut.resistanceFromCelsius(_targetTemperature);
 		uint16_t posistion = targetResistance >= DIGI_POTI_PRERESISTANCE ? roundf(((targetResistance - DIGI_POTI_PRERESISTANCE) / (DIGI_POTI_RESISTANCE / (DIGI_POTI_STEPS + 1))) - 1) : 0;
 		posistion = constrain(posistion, DIGI_POTI_STEP_MIN, DIGI_POTI_STEPS);
 		float positionResistance = (DIGI_POTI_RESISTANCE / (DIGI_POTI_STEPS + 1)) + (posistion * (DIGI_POTI_RESISTANCE / (DIGI_POTI_STEPS + 1)));
@@ -318,18 +318,17 @@ bool updateOutputTemperature()
 		if (_outputTemperature != outputTemperature)
 		{
 #ifdef LOG_DEBUG
-			LOG_DEBUG(F("Main"), F("updateOutputTemperature"), F("targetTemp=") + String(targetTemp) + F(" targetResistance=") + String(targetResistance) + F(" posistion=") + String(posistion) + F(" positionResistance=") + String(positionResistance) + F(" outputResistance=") + String(outputResistance) + F(" outputTemperature=") + String(outputTemperature));
+			LOG_DEBUG(F("Main"), F("updateOutputTemperature"), F("targetTemp=") + String(_targetTemperature) + F(" targetResistance=") + String(targetResistance) + F(" posistion=") + String(posistion) + F(" positionResistance=") + String(positionResistance) + F(" outputResistance=") + String(outputResistance) + F(" outputTemperature=") + String(outputTemperature));
 #endif
 			_spiDigitalPoti->transfer16(posistion);
 			_outputTemperature = outputTemperature;
-			_targetTemperature = targetTemp;
 			changed = true;
 		}
 	}
 	else
 	{
 		changed = !isnanf(_outputTemperature);
-		_outputTemperature = targetTemp;
+		_outputTemperature = _targetTemperature;
 	}
 
 	digitalWrite(GPIO_FAILOVER_OUT, !isnanf(_outputTemperature) ? HIGH : LOW);
@@ -353,10 +352,18 @@ void setupOutputTemperature()
 		TEMP_OUT_UPDATE_CYCLE,
 		[](void *opaque) -> bool
 		{
-			if (updateOutputTemperature() && _webinterface)
+			if (_webinterface)
 			{
-				_webinterface->setOutputTemp(_outputTemperature);
-				_webinterface->setTargetTemp(_targetTemperature);
+				auto oldTargetTemp = _targetTemperature;
+				if(updateOutputTemperature())
+				{
+					_webinterface->setOutputTemp(_outputTemperature);
+				}
+				
+				if(oldTargetTemp != _targetTemperature)
+				{
+					_webinterface->setTargetTemp(_targetTemperature);
+				}				
 			}
 
 			return true;
