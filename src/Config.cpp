@@ -166,7 +166,8 @@ TemperatureAdjustment *TemperatureConfig::getTempAdjustment(int8_t tempReal)
 
 TemperatureAdjustment::TemperatureAdjustment(int8_t tempReal, Preferences *preferences) : _preferences(preferences), tempReal(tempReal)
 {
-    _tempOffset = preferences->getChar(KEY_SETTING_TEMP_ADJUST_TEMP_OFFSET + tempReal, 0) / 10.0f;
+    auto keyOffset = String(KEY_SETTING_TEMP_ADJUST_TEMP_OFFSET) + tempReal;
+    _tempOffset =  preferences->getChar(keyOffset.c_str(), 0) / 10.0f;
 }
 
 float TemperatureAdjustment::setTemperatureOffset(float offset)
@@ -181,7 +182,8 @@ float TemperatureAdjustment::setTemperatureOffset(float offset)
     }
 
     _tempOffset = offset;
-    _preferences->putChar(KEY_SETTING_TEMP_ADJUST_TEMP_OFFSET + tempReal, (int8_t)(_tempOffset * 10));
+    auto keyOffset = String(KEY_SETTING_TEMP_ADJUST_TEMP_OFFSET) + tempReal;
+    _preferences->putChar(keyOffset.c_str(), (int8_t)(_tempOffset * 10));
     return _tempOffset;
 }
 
@@ -277,9 +279,15 @@ PowerArea *PowerConfig::getArea(float temperature)
 */
 
 PowerArea::PowerArea(size_t index, PowerConfig *config, Preferences *preferences) : index(index), _config(config), _preferences(preferences)
-{    _start = preferences->getShort(KEY_SETTING_POWER_AREA_START + index, 0) / 10.0f;
-    _end = preferences->getShort(KEY_SETTING_POWER_AREA_END + index, 0) / 10.0f;
-    _powerLimit = preferences->getUChar(KEY_SETTING_POWER_AREA_LIMIT + index, MAX_POWER_LIMIT);
+{
+    auto keyStart = String(KEY_SETTING_POWER_AREA_START) + index;
+    _start = preferences->getShort(keyStart.c_str(), 0) / 10.0f;
+
+    auto keyEnd = String(KEY_SETTING_POWER_AREA_END) + index;
+    _end = preferences->getShort(keyEnd.c_str(), 0) / 10.0f;
+
+    auto keyLimit = String(KEY_SETTING_POWER_AREA_LIMIT) + index;
+    _powerLimit = preferences->getUChar(keyLimit.c_str(), MAX_POWER_LIMIT);
 };
 
 float PowerArea::setStart(float start)
@@ -294,7 +302,8 @@ float PowerArea::setStart(float start)
     }
 
     _start = start;
-    _preferences->putShort(KEY_SETTING_POWER_AREA_START + index, (int16_t)(_start * 10));
+    auto keyStart = String(KEY_SETTING_POWER_AREA_START) + index;
+    _preferences->putShort(keyStart.c_str(), (int16_t)(_start * 10));
     return _start;
 }
 
@@ -310,7 +319,8 @@ float PowerArea::setEnd(float end)
     }
 
     _end = end;
-    _preferences->putShort(KEY_SETTING_POWER_AREA_END + index, (int16_t)(_end * 10));
+    auto keyEnd = String(KEY_SETTING_POWER_AREA_END) + index;
+    _preferences->putShort(keyEnd.c_str(), (int16_t)(_end * 10));
     return _end;
 }
 
@@ -325,7 +335,8 @@ uint8_t PowerArea::setPowerLimit(uint8_t powerLimit)
     }
 
     _powerLimit = powerLimit;
-    _preferences->putUChar(KEY_SETTING_POWER_AREA_LIMIT + index, _powerLimit);
+    auto keyLimit = String(KEY_SETTING_POWER_AREA_LIMIT) + index;
+    _preferences->putUChar(keyLimit.c_str(), _powerLimit);
     return _powerLimit;
 }
 
