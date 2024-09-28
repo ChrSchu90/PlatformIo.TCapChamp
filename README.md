@@ -2,7 +2,7 @@
 [![Build](https://github.com/ChrSchu90/PlatformIo.TCapChamp/actions/workflows/build.yml/badge.svg)](https://github.com/ChrSchu90/PlatformIo.TCapChamp/actions/workflows/build.yml)
 
 ## Description
-`ESP32` project that manipulates the outside temperature to adjust the heat pump cycle rate. In case the heat pump is overdimensioned it can increase its efficiency dramatically since you can adjust the cycle rate specifically on your environment and needs.
+`ESP32` project that manipulates the outside temperature measurement to adjust the heat pump cycle rate. In case the heat pump is overdimensioned it can increase its efficiency dramatically since you can adjust the cycle rate specifically on your environment and needs.
 The manipulated temperature output needs to be connected to the external temperature sensor of the T-Cap.
 
 If you already use an external temperature sensor you can connect it as input sensor for the ESP, in case you don't have a temperature sensor you can use the free [OpenWeather API](https://api.openweathermap.org) to receive actual temperatures. 
@@ -16,7 +16,7 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 | ------------------------------------------------ | --------- |
 | Automatic switch between WiFi AP and Client mode | &#10003;  |
 | Hardware sensor for input temperature            | &#10003;  |
-| Weather API for input temperature                | &#10003;  |
+| Weather API for input temperature (OpenWeather)  | &#10003;  |
 | 0V-10V Demand control                            | &#10003;  |
 | OTA Updates                                      | &#10003;  |
 | Captive Portal for initial WiFi configuration    | &#10003;  |
@@ -31,7 +31,7 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 | [Electrical wire](https://www.amazon.de/dp/B08BZKR22W)     | &#10003; |                                                                               |
 | [Prototype Board](https://www.amazon.de/dp/B08F2TS7ZC)     | &#10003; | For final board                                                               |
 | 10k resistor                                               | &#10003; | Voltage devider for input sensor                                              |
-| 5k resistor                                                | &#10003; | Pre-Resistor for Digital potentiometer (defines the possible output temperature, in my case +30°C to -20°C |
+| 5k resistor                                                | &#10003; | Pre-Resistor for Digital potentiometer (defines the possible output temperature, in my case +30°C to -20°C) |
 | [DFRobot Gravity I2C DAC Module](https://www.dfrobot.com/product-2613.html)      | &#10007; | Optional I2C DAC 0-10V for Demand Control                                                   |
 | [Breadboard Kit](https://www.amazon.de/dp/B0B18G3V5T)      | &#10007; | Prototype Board for testing                                                   |
 | [Connectors](https://www.amazon.de/dp/B087RN8FDZ)          | &#10007; | Connector for wires                                                           |
