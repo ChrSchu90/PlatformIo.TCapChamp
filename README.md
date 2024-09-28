@@ -45,11 +45,11 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 ## Electrical Drawings
 You can find the the electrical drawings and parts inside `Documentation\Fritzing` as [Fritzing](https://fritzing.org/) (freeware) project.
 
-<img src="Documentation/Screenshots/Breadboard Drawing.jpg" alt="drawing" width="250" /><img src="Documentation/Screenshots/Schematic Drawing.jpg" alt="drawing" width="250" />
+<img src="Documentation/Screenshots/Breadboard Drawing.jpg" alt="drawing" width="250" /><img src="Documentation/Screenshots/Schematic Drawing.jpg" alt="drawing" width="320" />
 
 
 ## Final board (example)
-<img src="Documentation/Images/Image1.jpg" alt="drawing" width="250" /><img src="Documentation/Images/Image2.jpg" alt="drawing" width="250" />
+<img src="Documentation/Images/Image1.jpg" alt="drawing" width="283" /><img src="Documentation/Images/Image2.jpg" alt="drawing" width="250" />
 
 ## Webinterface
 <img src="Documentation/Screenshots/Webinterface_Adjustment.jpg" alt="drawing" width="300" />
