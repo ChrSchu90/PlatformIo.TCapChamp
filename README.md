@@ -92,9 +92,13 @@ It also makes it a lot easier at the beginning, since first you need to figure o
 4. Force manual output temperature `3` on/off
 
 > **Note**
-> Keep in mind that the components are not perfect and have tolerances!
-> The output values are calculated and may not match the temperature that
-> the T-Cap will read. You can use the T-Cap sensor calibration for compensation.
+> Keep in mind that the components are not perfect and have tolerances. Also the `Digital Potentiometer`
+> works with limited steps, which can't alway be on spot. 
+> The `Target Temperature` is calculated and may not match the `Output Temperature` that represens the
+> mathematically closest available resistance. If you want, you can use the T-Cap sensor calibration for compensation.
+>
+> Below you can find a chart with the delta between `Target Temperature`, `Output Temperature`
+> and the measured output temperature that the T-Cap will read from the physical output resistance:
 
 <img src="Documentation/Screenshots/DeltaTargetToOutputChart.jpg" alt="drawing" width="465" />
 
