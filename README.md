@@ -9,7 +9,9 @@ If you already use an external temperature sensor you can connect it as input se
 
 Via an optional 0-10V DAC it is also possible to limit the power consumption via `Demand Control` of the T-Cap.
 
-[Service Manual T-Cap (PDF)](https://www.kaelte-bast.de/dateien_neu13/Panasonic/01-produktunterlagen/aquarea/produkte/waermepumpen/t-cap/sqc/handbuch_englisch/sm_wh-sqc09h3e8%2Cwh-sqc12.16h9e8_%28papamy1704053ce%29.pdf)
+> **Info**
+> You can find the measurements, charts and calcumations inside the [TestsAndCharts.xlsx](Documentation/TestsAndCharts.xlsx)
+> Device specific information can be taken from the [T-Cap Service Manual (PDF)](https://www.kaelte-bast.de/dateien_neu13/Panasonic/01-produktunterlagen/aquarea/produkte/waermepumpen/t-cap/sqc/handbuch_englisch/sm_wh-sqc09h3e8%2Cwh-sqc12.16h9e8_%28papamy1704053ce%29.pdf)
 
 ## Features
 | Feature                                          | Completed |
@@ -64,18 +66,17 @@ A common way to manipulate the temperature is to connect a parallel resistor (e.
 
 <img src="Documentation/Screenshots/ParallelResistorChart.jpg" alt="drawing" width="450" />
 
-### The good solution
-Due to that problem this project has been started to provide a more granular and comfortable way, without changing hardware if another offset is required. 
+### The superior solution
+Due to the problems with a parallel resistor this project has been started to provide a more granular and comfortable way, without changing hardware if another offset is required. 
 
 It also makes it a lot easier at the beginning, since first you need to figure out what offset is the best based on your environment and preferences. To do so you can control input and output temperatures manually until you know where your sweetspot is. Afterwards the controller manipulates the output temperature based on a input temperature fully automated.
 
 <img src="Documentation/Screenshots/Example1Configuration.jpg" alt="drawing" width="85" /><img src="Documentation/Screenshots/Example1Chart.jpg" alt="drawing" width="375" />
 
 > **Note**
-> Keep in mind that the used components are not perfect and have tolerances!
+> Keep in mind that the components are not perfect and have tolerances!
 > The output values are calculated and may not match the temperature that
-> the T-Cap will read. You can use the T-Cap sensor calibration (+/- 2°C)
-> to compensate the tolerances.
+> the T-Cap will read. You can use the T-Cap sensor calibration for compensation.
 
 <img src="Documentation/Screenshots/DeltaTargetToOutputChart.jpg" alt="drawing" width="465" />
 
@@ -85,11 +86,11 @@ The T-Cap provides a 0-10V analog input to limit the power consumption. It can b
 To do so you can define temperature areas and its power limit inside the UI.
 
 > **Note**
-> The first matching area will be uses (top to buttom). In case no responsable
-> area will be found the output will be set to 0V (not active).
-> If you like to define a default limit place the value inside the last area
-> with start 30°C and end -20°C and define specific areas above.
-> To deactivate areas set start and end temperature to the same value.
+> The `Input Temperature` will be used to determine the area, this ensures that 
+> temperature adjustments will not influence the power limits.
+
+The first matching area will be uses (top to buttom). In case no responsable area will be found the output will be set to 0V (not active).
+If you like to define a default limit place the value inside the last area with start 30°C and end -20°C and define specific areas above. To deactivate areas set start and end temperature to the same value.
 
 <img src="Documentation/Screenshots/ExamplePowerLimit.jpg" alt="drawing" width="300" />
 

@@ -12,6 +12,7 @@ on:
       - '*.jpg'
       - '*.fzz'
       - '*.fzpz'
+      - '*.xlsx'
   pull_request:
     branches:
       - 'main'
