@@ -62,7 +62,7 @@ You can find the the electrical drawings and parts inside `Documentation\Fritzin
 ## Temperature Adjustment
 
 ### The cheap solution
-A common way to manipulate the temperature is to connect a parallel resistor (e.g. 75k Ω) to the external sensor. The problem with this approach is that a thermal resistor isn't a linear resistor and because of that the temperature offset increases as the real temperature goes down:
+A common way to manipulate the temperature is to connect a parallel resistor (e.g. 75k Ω) to the external sensor. The problem with this approach is that a thermal resistor isn't linear and because of that the temperature offset increases as the real temperature goes down:
 
 <img src="Documentation/Screenshots/ParallelResistorChart.jpg" alt="drawing" width="450" />
 
