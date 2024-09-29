@@ -10,7 +10,7 @@ If you already use an external temperature sensor you can connect it as input se
 Via an optional 0-10V DAC it is also possible to limit the power consumption via `Demand Control` of the T-Cap.
 
 > **Info**
-> You can find the measurements, charts and calcumations inside the [TestsAndCharts.xlsx](Documentation/TestsAndCharts.xlsx)
+> You can find the measurements, charts and calculations inside the [TestsAndCharts.xlsx](Documentation/TestsAndCharts.xlsx).
 > Device specific information can be taken from the [T-Cap Service Manual (PDF)](https://www.kaelte-bast.de/dateien_neu13/Panasonic/01-produktunterlagen/aquarea/produkte/waermepumpen/t-cap/sqc/handbuch_englisch/sm_wh-sqc09h3e8%2Cwh-sqc12.16h9e8_%28papamy1704053ce%29.pdf)
 
 ## Features
