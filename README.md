@@ -134,7 +134,7 @@ To do so you can define temperature areas and its power limit inside the UI.
 
 > [!NOTE]
 > Power limit can be defined in a range between `10%-100%` in `5%` steps.
-> values `<10%` are handled as `not active`
+> Values `<10%` are handled as `not active`
 
 ## 3rd Party libraries
 The following libraries are used by this project (Thank you very much!)
