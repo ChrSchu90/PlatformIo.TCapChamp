@@ -104,8 +104,7 @@ It also makes it a lot easier at the beginning, since first you need to figure o
 >
 > Below you can find a chart with the delta between `Target Temperature`, `Output Temperature`
 > and the measured output temperature that the T-Cap will read from the physical output resistance:
-
-<img src="Documentation/Screenshots/DeltaTargetToOutputChart.jpg" alt="drawing" width="465" />
+> <img src="Documentation/Screenshots/DeltaTargetToOutputChart.jpg" alt="drawing" width="465" />
 
 ## Demand Control (optional)
 The T-Cap provides a 0-10V analog input to limit the power consumption. It can be a handy tool to optimize the heat pump even more as what is possible only by temperature adjustments.
