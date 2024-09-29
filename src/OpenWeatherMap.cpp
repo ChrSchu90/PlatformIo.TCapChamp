@@ -7,12 +7,10 @@
 
 OpenWeatherMap::OpenWeatherMap(String apiKey, unsigned int cityId) : apiUrl(String("https://api.openweathermap.org/data/2.5/weather?id=") + cityId + "&lang=en&units=METRIC&appid=" + apiKey)
 {
-    _temperature = NAN;
 }
 
 OpenWeatherMap::OpenWeatherMap(String apiKey, double latitude, double longitude) : apiUrl(String("https://api.openweathermap.org/data/2.5/weather?lat=") + String(latitude, 6) + "&lon=" + String(longitude, 6) + "&lang=en&units=METRIC&appid=" + apiKey)
 {
-    _temperature = NAN;
 }
 
 ApiResponse OpenWeatherMap::request()
@@ -40,8 +38,8 @@ ApiResponse OpenWeatherMap::request()
 
     auto response = client.getString();
     client.end();
-#ifdef LOG_INFO
-    LOG_INFO(F("OpenWeatherMap"), F("request"), F("response = ") + response);
+#ifdef LOG_DEBUG
+    LOG_DEBUG(F("OpenWeatherMap"), F("request"), F("response = ") + response);
 #endif
 
     JsonDocument doc;
@@ -55,12 +53,27 @@ ApiResponse OpenWeatherMap::request()
         return ApiResponse(DeserializationFailed, httpCode);
     }
 
-    _temperature = doc["main"]["temp"];
-#ifdef LOG_ERROR
-    LOG_ERROR(F("OpenWeatherMap"), F("request"), F("_temperature = ") + _temperature);
+    float temperature = doc["main"]["temp"];
+    long unixTimestampUtc = doc["dt"];          // Time of data calculation, epoch unix in seconds, UTC
+    long unixTimezoneShift = doc["timezone"];   //  Shift in seconds from UTC
+    auto unixTimestampLocal = unixTimestampUtc + unixTimezoneShift;
+    time_t time = unixTimestampLocal;
+    auto ts = gmtime(&time);
+    //char buf[18];
+    //strftime(buf, sizeof(buf), "%d.%m.%y %H:%M:%S", ts);
+    char buf[9];
+    strftime(buf, sizeof(buf), "%H:%M:%S", ts);
+    auto timeString = String(buf);
+
+#ifdef LOG_INFO
+    LOG_INFO(F("OpenWeatherMap"), F("request"), F("temperature = ") + 
+    temperature + F(" unixTimestampUtc = ") + unixTimestampUtc + 
+    F(" unixTimezoneShift = ") + unixTimezoneShift + 
+    F(" unixTimestampLocal = ") + unixTimestampLocal + 
+    F(" time = ") + timeString);
 #endif
     doc.clear();
-    return ApiResponse(_temperature);
+    return ApiResponse(temperature, timeString);
 }
 
 /*

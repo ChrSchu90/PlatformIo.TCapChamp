@@ -31,8 +31,8 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
     ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Sensor", ControlColor::None, inputTempGrp), STYLE_LBL_INOUT_VALUE_OUTPUT);
 
     _lblWeatherTemp = ESPUI.addControl(ControlType::Label, "Weather API", String(NAN) + " °C", ControlColor::None, inputTempGrp);
-    ESPUI.setElementStyle(_lblWeatherTemp, STYLE_LBL_INOUT);
-    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Weather API", ControlColor::None, inputTempGrp), STYLE_LBL_INOUT_VALUE_OUTPUT);
+    ESPUI.setElementStyle(_lblWeatherTemp, STYLE_LBL_API);
+    ESPUI.setElementStyle(ESPUI.addControl(ControlType::Label, NO_VALUE, "Weather API", ControlColor::None, inputTempGrp), STYLE_LBL_API_VALUE_OUTPUT);
     
     _numManualTempInput = ESPUI.addControl(
         ControlType::Number, NO_VALUE, String(config->temperatureConfig->getManualInputTemperature(), 1), ControlColor::None, inputTempGrp,
@@ -201,14 +201,23 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
         });
 };
 
+bool Webinterface::getClientIsConnected()
+{
+    //ESPUI.ws->count() > 0;
+    return true; // TODO: get if client is connected
+}
+
 void Webinterface::setSensorTemp(const float temperature)
 {
     ESPUI.updateLabel(_lblSensorTemp, String(temperature) + " °C");
 }
 
-void Webinterface::setWeatherTemp(const float temperature)
+void Webinterface::setWeatherTemp(const float temperature, const String timestamp)
 {
-    ESPUI.updateLabel(_lblWeatherTemp, String(temperature) + " °C");
+    if(!timestamp.isEmpty())
+        ESPUI.updateLabel(_lblWeatherTemp, String(temperature) + " °C (" + timestamp + ")");
+    else
+        ESPUI.updateLabel(_lblWeatherTemp, String(temperature) + " °C");
 }
 
 void Webinterface::setOutputTemp(const float temperature)

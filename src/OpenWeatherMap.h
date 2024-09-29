@@ -19,10 +19,10 @@ enum Error
 struct ApiResponse
 {
     /// @brief Creates a new instance of an successful API request
-    ApiResponse(float temperature) : successful(true), error(None), httpCode(HTTP_CODE_OK), temperature(temperature){};
+    ApiResponse(const float temperature, const String timestamp) : successful(true), error(None), httpCode(HTTP_CODE_OK), temperature(temperature), timestamp(timestamp){};
 
     /// @brief Creates a new instance of an failed API request
-    ApiResponse(Error error, int httpCode) : successful(false), error(error), httpCode(httpCode), temperature(NAN){};
+    ApiResponse(const Error error, const int httpCode) : successful(false), error(error), httpCode(httpCode), temperature(NAN), timestamp(emptyString){};
 
     /// @brief Gets if the request was successful
     const bool successful;
@@ -35,6 +35,9 @@ struct ApiResponse
 
     /// @brief Gets the termperature or NAN if request failed
     const float temperature;
+
+    /// @brief Gets the timestamp of the temperature
+    const String timestamp;
 };
 
 /// @brief Implements the OpenWeatherMap API https://openweathermap.org/current
@@ -43,10 +46,7 @@ struct ApiResponse
 class OpenWeatherMap
 {
 private:
-    float _temperature;
-
 protected:
-
 public:
 
     /// @brief URL that is used for the API requests
@@ -62,10 +62,6 @@ public:
     /// @param latitude Location latitude (can be taken from google maps with right-click)
     /// @param longitude Location longitude (can be taken from google maps with right-click)
     OpenWeatherMap(String apiKey, double latitude, double longitude);
-
-    /// @brief Gets the last known valid temperature received by the API
-    /// @return a valid temperature or NAN
-    float getLastValidTemperature() { return _temperature; }
 
     /// @brief Sends a API request (may take a while and will block)
     /// @return the API response

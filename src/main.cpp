@@ -42,6 +42,7 @@ Timer<6, millis> _timers;	 									// Timer collection for time based operation
 Config *_config;			 									// Access to the configuration
 float _thermistorInTemperature = NAN;							// Last temperature from input sensor (NAN if not available)
 float _weatherApiTemperature = NAN;								// Last temperature from weather API (NAN if not available)
+String _weatherApiTimestamp = emptyString;						// Last temperature from weather API (NAN if not available)
 float _outputTemperature = NAN;									// Last output temperature (NAN if no temperature could be calculated)
 float _targetTemperature = NAN;									// Last output target temperature (NAN if no temperature could be calculated)
 uint8_t _powerLimitPercent = 0;									// Last powerlimit in percent (<10 means disabled)
@@ -200,8 +201,9 @@ bool updateWeatherApiTemperature()
 #endif
 
 	_timers.every(WEATHER_API_UPDATE_CYCLE, updateWeatherApiTemperatureTick);
-	bool changed = _weatherApiTemperature != request.temperature;
+	bool changed = _weatherApiTemperature != request.temperature || _weatherApiTimestamp != request.timestamp;
 	_weatherApiTemperature = request.temperature;
+	_weatherApiTimestamp = request.timestamp;
 	return changed;
 }
 
@@ -212,7 +214,7 @@ bool updateWeatherApiTemperatureTick(void *opaque)
 {
 	if (updateWeatherApiTemperature() && _webinterface)
 	{
-		_webinterface->setWeatherTemp(_weatherApiTemperature);
+		_webinterface->setWeatherTemp(_weatherApiTemperature, _weatherApiTimestamp);
 	}
 
 	// Stop current timer, a new one is created by updateWeatherApiTemperature depending if failed or successful
@@ -356,14 +358,12 @@ void setupOutputTemperature()
 			{
 				auto oldTargetTemp = _targetTemperature;
 				if(updateOutputTemperature())
-				{
 					_webinterface->setOutputTemp(_outputTemperature);
-				}
 				
 				if(oldTargetTemp != _targetTemperature)
-				{
 					_webinterface->setTargetTemp(_targetTemperature);
-				}				
+
+				//_webinterface->updateSystemInformation();
 			}
 
 			return true;
@@ -472,7 +472,7 @@ void setupWebinterface()
 
 	// Set initial values
 	_webinterface->setSensorTemp(_thermistorInTemperature);
-	_webinterface->setWeatherTemp(_weatherApiTemperature);
+	_webinterface->setWeatherTemp(_weatherApiTemperature, _weatherApiTimestamp);
 	_webinterface->setOutputTemp(_outputTemperature);
 	_webinterface->setTargetTemp(_targetTemperature);
 	if (_i2cDac)

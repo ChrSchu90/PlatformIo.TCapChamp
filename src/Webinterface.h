@@ -9,8 +9,10 @@
 #define STYLE_NUM_POWER_ADJUST_DISABLED "width: 16%; color: black; background: rgba(153,153,153,0.8);"
 #define STYLE_LBL_ADJUST "background-color: unset; width: 84%; text-align-last: left;"
 #define STYLE_LBL_INOUT "width: 16%;"
+#define STYLE_LBL_API "width: 29%;"
 #define STYLE_SWITCH_INOUT "margin-bottom: 3px; width: 12.5%; vertical-align: middle; "
 #define STYLE_NUM_INOUT_MANUAL_INPUT "width: 16%; color: black; background: rgba(255,255,255,0.8);"
+#define STYLE_LBL_API_VALUE_OUTPUT "background-color: unset; text-align: left; width: 70.5%;"
 #define STYLE_LBL_INOUT_VALUE_OUTPUT "background-color: unset; text-align: left; width: 83.5%;"
 #define STYLE_LBL_INOUT_MANUAL_ENABLE "background-color: unset; text-align: left; width: 70%; vertical-align: bottom;" 
 
@@ -141,13 +143,22 @@ public:
     /// @param wifiManager the WiFi manager
     Webinterface(const uint16_t port, Config *config);
 
+    /// @brief Gets if any client is connected 
+    bool getClientIsConnected();
+
+    /// @brief Update the System information inside the Webinterface-Tab
+    void updateSystemInformation() { if(getClientIsConnected()) _systemInfoTab->update(); };
+
+    /// @brief Update the WiFi information inside the Webinterface-Tab
+    void updateWiFiInformation() {  if(getClientIsConnected()) _wifiInfoTab->update(); };
+
     /// @brief Updates the sensor temperature inside webinterface
     /// @param temperature the new temperature
     void setSensorTemp(const float temperature);
 
     /// @brief Updates the weather API temperature inside webinterface
     /// @param temperature the new temperature
-    void setWeatherTemp(const float temperature);
+    void setWeatherTemp(const float temperature, const String timestamp);
 
     /// @brief Updates the output temperature inside webinterface
     /// @param temperature the new output temperature
