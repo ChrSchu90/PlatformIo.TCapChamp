@@ -77,9 +77,10 @@ public:
 
     /// @brief
     /// @param apSSID Optional SSID for the AP mode, falls back to ESP-[SerialNumber]
+    /// @param blockInitalConnect Optional block while connecting for the first time until connection fails or successfully connected based on connect timeout
     /// @param apPassword Optional password for the AP mode, if not defined accassable woithout password
     /// @param hostname Optional hostname, falls back to ESP-[SerialNumber]
-    void begin(char const *apSSID = "", char const *apPassword = "", char const *hostname = "");
+    void begin(char const *apSSID = "", const bool blockInitalConnect = false, char const *apPassword = "", char const *hostname = "");
 
     /// @brief Sets the WiFi credentials for the STA connection, connect to the WiFi and optionally saves the new credentials
     /// @param ssid the SSID for the STA connection

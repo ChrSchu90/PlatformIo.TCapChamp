@@ -166,13 +166,16 @@ const String WifiModeChampClass::getDefaultHostName()
     return host;
 }
 
-void WifiModeChampClass::begin(char const *apSSID, char const *apPassword, char const *hostname)
+void WifiModeChampClass::begin(char const *apSSID, const bool blockInitalConnect, char const *apPassword, char const *hostname)
 {
     if (_wifiEventListenerId != 0)
         return;
 
 #ifdef LOG_DEBUG
-    LOG_DEBUG(F("WiFiModeChamp"), F("begin"), F("Starting in non-blocking mode..."));
+    if(blockInitalConnect)        
+        LOG_DEBUG(F("WiFiModeChamp"), F("begin"), F("Starting in blocking mode..."));
+    else
+        LOG_DEBUG(F("WiFiModeChamp"), F("begin"), F("Starting in non-blocking mode..."));
 #endif
 
     if (_wifiSsid.isEmpty())
@@ -201,27 +204,42 @@ void WifiModeChampClass::begin(char const *apSSID, char const *apPassword, char 
 
     auto host = getDefaultHostName();
     if (apSSID == "")
-    {
         _apSSID = "ESP-" + host;
-    }
     else
-    {
         _apSSID = apSSID;
-    }
 
     if (hostname == "")
-    {
         _hostname = "ESP-" + host;
-    }
     else
-    {
         _hostname = hostname;
-    }
 
     WiFi.mode(WIFI_STA);
     _apPassword = apPassword;
     _wifiEventListenerId = WiFi.onEvent(std::bind(&WifiModeChampClass::onWiFiEvent, this, std::placeholders::_1));
     _state = WifiModeChampState::NETWORK_ENABLED;
+
+    // Skip blocking connect if disabled, WiFi not configured or password is invalid
+    if(!blockInitalConnect || _wifiSsid.isEmpty() || (!_wifiPassword.isEmpty() && _wifiPassword.length() < 8))
+        return;
+    
+    auto connectDelay = 10;
+	int64_t connectTimeout = _connectTimeout * 1000;
+    loop();
+#ifdef LOG_DEBUG
+        LOG_DEBUG(F("WiFiModeChamp"), F("begin"), F("Waiting for initial WiFi connection..."));
+#endif
+    while (connectTimeout > 0 && WiFi.status() != WL_CONNECTED)
+    {
+        loop();
+		delay(connectDelay);
+		connectTimeout -= connectDelay;
+    }
+#ifdef LOG_DEBUG
+	if(WiFi.status() != WL_CONNECTED)
+		LOG_DEBUG(F("WiFiModeChamp"), F("begin"), F("Initial connection to WiFi failed"));
+	else
+		LOG_DEBUG(F("WiFiModeChamp"), F("begin"), F("Successfuly connected to WiFi"));
+#endif
 }
 
 bool WifiModeChampClass::setWifiCredentials(const String ssid, const String password, bool save)

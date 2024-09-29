@@ -489,7 +489,7 @@ void setupWebinterface()
 #endif
 }
 
-/// @brief Setup for WiFiManager as blocking implementation if not configured.
+/// @brief Setup for WiFiManager as blocking implementation if configured.
 void setupWifiManager()
 {
 #ifdef LOG_DEBUG
@@ -504,35 +504,7 @@ void setupWifiManager()
 	WifiModeChamp.setReconnectTimeout(120);
     WifiModeChamp.setConnectTimeout(30);
     WifiModeChamp.setWifiScanWaitTime(30);
-	WifiModeChamp.begin("T-Cap Champ", WIFI_CONFIG_PASSWORD);
-
-	auto configuredWifiSsid = WifiModeChamp.getConfiguredWiFiSSID();
-	if(configuredWifiSsid.isEmpty() || configuredWifiSsid.length() < 1)
-	{
-#ifdef LOG_DEBUG
-	LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Skip waiting for initial WiFi connection since no WiFi is configured"));
-#endif
-		return;
-	}
-
-#ifdef LOG_DEBUG
-	LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Waiting for initial WiFi connection..."));
-#endif
-	auto connectDelay = 10;
-	auto connectTimeout = 15000;
-	while (connectTimeout > 0 && WiFi.status() != WL_CONNECTED)
-	{
-		WifiModeChamp.loop();
-		delay(connectDelay);
-		connectTimeout -= connectDelay;
-	}
-
-#ifdef LOG_DEBUG
-	if(WiFi.status() != WL_CONNECTED)
-		LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Initial connection to WiFi failed"));
-	else
-		LOG_DEBUG(F("Main"), F("setupWifiManager"), F("Successfuly connected to WiFi"));
-#endif
+	WifiModeChamp.begin("T-Cap Champ", true, WIFI_CONFIG_PASSWORD);
 }
 
 /// @brief Put your setup code here, to run once:
