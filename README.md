@@ -9,9 +9,14 @@ If you already use an external temperature sensor you can connect it as input se
 
 Via an optional 0-10V DAC it is also possible to limit the power consumption via `Demand Control` of the T-Cap.
 
-> **Info**
+> [!NOTE]
 > You can find the measurements, charts and calculations inside the [TestsAndCharts.xlsx](Documentation/TestsAndCharts.xlsx),
 > device specific information can be taken from the [T-Cap Service Manual (PDF)](https://www.kaelte-bast.de/dateien_neu13/Panasonic/01-produktunterlagen/aquarea/produkte/waermepumpen/t-cap/sqc/handbuch_englisch/sm_wh-sqc09h3e8%2Cwh-sqc12.16h9e8_%28papamy1704053ce%29.pdf)
+
+
+> [!Caution]
+> The connection between the T-Cap and the Controller should only be done by a trained professional. 
+> **There is a danger to life due to high voltage (230V/400V) within the device!**
 
 ## Features
 | Feature                                          | Completed |
@@ -91,7 +96,7 @@ It also makes it a lot easier at the beginning, since first you need to figure o
 3. Manual output temperature for testing (ignores adjustment offsets)
 4. Force manual output temperature `3` on/off
 
-> **Note**
+> [!IMPORTANT]
 > Keep in mind that the components are not perfect and have tolerances. Also the `Digital Potentiometer`
 > works with limited steps, which can't alway be on spot. 
 > The `Target Temperature` is calculated and may not match the `Output Temperature` that represens the
@@ -107,13 +112,14 @@ The T-Cap provides a 0-10V analog input to limit the power consumption. It can b
 
 To do so you can define temperature areas and its power limit inside the UI.
 
-> **Note**
+> [!NOTE]
 > The `Input Temperature` will be used to determine the area, this ensures that 
 > temperature adjustments will not influence the power limits.
 
-The first matching area will be uses (top to buttom). In case no responsable area will be found the output will be set to 0V (not active).
-If you like to define a default limit place the value inside the last area with start 30°C and end -20°C and define specific areas above. 
-To deactivate areas set start and end temperature to the same value.
+> [!TIP]
+> The first matching area will be uses (top to buttom). In case no responsable area will be found the output will be set to 0V (not active).
+> If you like to define a default limit place the value inside the last area with start 30°C and end -20°C and define specific areas above. 
+> To deactivate areas set start and end temperature to the same value.
 
 <img src="Documentation/Screenshots/ExamplePowerLimit.jpg" alt="drawing" width="300" />
 
@@ -126,7 +132,7 @@ To deactivate areas set start and end temperature to the same value.
 2. Manual output power limit for testing (ignores adjustments)
 3. Force manual output power limit `2` on/off
 
-> **Note**
+> [!NOTE]
 > Power limit can be defined in a range between `10%-100%` in `5%` steps.
 < values `<10%` are handled as `not active`
 
