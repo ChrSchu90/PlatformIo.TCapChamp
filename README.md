@@ -10,8 +10,8 @@ If you already use an external temperature sensor you can connect it as input se
 Via an optional 0-10V DAC it is also possible to limit the power consumption via `Demand Control` of the T-Cap.
 
 > **Info**
-> You can find the measurements, charts and calculations inside the [TestsAndCharts.xlsx](Documentation/TestsAndCharts.xlsx).
-> Device specific information can be taken from the [T-Cap Service Manual (PDF)](https://www.kaelte-bast.de/dateien_neu13/Panasonic/01-produktunterlagen/aquarea/produkte/waermepumpen/t-cap/sqc/handbuch_englisch/sm_wh-sqc09h3e8%2Cwh-sqc12.16h9e8_%28papamy1704053ce%29.pdf)
+> You can find the measurements, charts and calculations inside the [TestsAndCharts.xlsx](Documentation/TestsAndCharts.xlsx),
+> device specific information can be taken from the [T-Cap Service Manual (PDF)](https://www.kaelte-bast.de/dateien_neu13/Panasonic/01-produktunterlagen/aquarea/produkte/waermepumpen/t-cap/sqc/handbuch_englisch/sm_wh-sqc09h3e8%2Cwh-sqc12.16h9e8_%28papamy1704053ce%29.pdf)
 
 ## Features
 | Feature                                          | Completed |
@@ -67,11 +67,29 @@ A common way to manipulate the temperature is to connect a parallel resistor (e.
 <img src="Documentation/Screenshots/ParallelResistorChart.jpg" alt="drawing" width="450" />
 
 ### The superior solution
-Due to the problems with a parallel resistor this project has been started to provide a more granular and comfortable way, without changing hardware if another offset is required. 
+
+### Temperature Adjustment
+Due to the precision problems with a parallel resistor this project has been started, to provide a more granular and comfortable way, without changing hardware if another offset is required. 
 
 It also makes it a lot easier at the beginning, since first you need to figure out what offset is the best based on your environment and preferences. To do so you can control input and output temperatures manually until you know where your sweetspot is. Afterwards the controller manipulates the output temperature based on a input temperature fully automated.
 
 <img src="Documentation/Screenshots/Example1Configuration.jpg" alt="drawing" width="85" /><img src="Documentation/Screenshots/Example1Chart.jpg" alt="drawing" width="375" />
+
+### Input Temperature
+<img src="Documentation/Screenshots/InputTemperatureGroup.jpg" alt="drawing" width="465" />
+
+1. Temperature from hardware sensor (`nan` if not connected)
+2. Temperature received from the Weather API (`nan` if not configured)
+3. Manual temperature input for testing (if `1` and `2` are `nan` value is used as fallback)
+4. Force manual temperature `3` on/off
+
+### Output Temperature
+<img src="Documentation/Screenshots/OutputTemperatureGroup.jpg" alt="drawing" width="465" />
+
+1. Actual output temperature (closest available to `2`, limited by the steps of the `Digital Potentiometer`)
+2. Target temperature (input temperature + offset)
+3. Manual output temperature for testing (ignores adjustment offsets)
+4. Force manual output temperature `3` on/off
 
 > **Note**
 > Keep in mind that the components are not perfect and have tolerances!
@@ -90,11 +108,23 @@ To do so you can define temperature areas and its power limit inside the UI.
 > temperature adjustments will not influence the power limits.
 
 The first matching area will be uses (top to buttom). In case no responsable area will be found the output will be set to 0V (not active).
-If you like to define a default limit place the value inside the last area with start 30°C and end -20°C and define specific areas above. To deactivate areas set start and end temperature to the same value.
+If you like to define a default limit place the value inside the last area with start 30°C and end -20°C and define specific areas above. 
+To deactivate areas set start and end temperature to the same value.
 
 <img src="Documentation/Screenshots/ExamplePowerLimit.jpg" alt="drawing" width="300" />
 
 <img src="Documentation/T-Cap Manual/DemandControl.jpg" alt="drawing" width="465" />
+
+### Output Power Limit
+<img src="Documentation/Screenshots/OutputPowerGroup.jpg" alt="drawing" width="465" />
+
+1. Actual power limit send to the T-Cap
+2. Manual output power limit for testing (ignores adjustments)
+3. Force manual output power limit `2` on/off
+
+> **Note**
+> Power limit can be defined in a range between `10%-100%` in `5%` steps.
+< values `<10%` are handled as `not active`
 
 ## 3rd Party libraries
 The following libraries are used by this project (Thank you very much!)

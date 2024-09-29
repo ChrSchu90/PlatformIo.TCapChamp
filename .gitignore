@@ -6,5 +6,8 @@
 .vscode/settings.json
 temp
 
+# Excel temp file
+**/~$*.xlsx
+
 # Exclude secrets for e.g. weather API key
 Secrets.h
