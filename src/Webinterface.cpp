@@ -130,7 +130,6 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
         {
             Webinterface *instance = static_cast<Webinterface *>(UserInfo);
             ESPUI.updateSwitcher(sender->id, instance->_config->powerConfig->setManualOutputActive(sender->value.toInt() > 0));
-            //instance->updateStatus(); // TODO: show enable disable manual output power?
         },
         this);
     ESPUI.setElementStyle(_swManualPowerOutput, STYLE_SWITCH_INOUT);    
@@ -355,11 +354,10 @@ SystemInfoTab::SystemInfoTab()
             }
 
             SystemInfoTab *instance = static_cast<SystemInfoTab *>(UserInfo);
-
             // There is a racing condition that occured if the save button gets pressed without pressing enter on SSID or Password input.
             // This causes the save button event to be fired a couple of ms before the updated value is written into the text boxes, which 
             // leads into invalid credentials due to outdated values. Therefore the credential update is handled async inside the update event.
-            WifiModeChamp.setWifiCredentials(ESPUI.getControl(instance -> _txtSsid)->value, ESPUI.getControl(instance -> _txtPassword)->value, true);
+            instance->_credentialUpdateCnt = 2;
         },
         this);
 
@@ -439,7 +437,7 @@ void SystemInfoTab::wifiScanCompleted(int16_t networkCnt)
     }
     else
     {
-        // TODO: is there a better solution? On the other hand it will not be used very much...
+        // Is there a better solution? On the other hand it will not be used very much...
         for (int16_t o = 0; o < AmountWiFiOptions; ++o)
         {
             // Remove old option
@@ -478,6 +476,18 @@ void SystemInfoTab::updateBtnSaveState()
 
 void SystemInfoTab::update()
 {
+    if(_credentialUpdateCnt > 0)
+    {
+        // There is a racing condition that occured if the save button gets pressed without pressing enter on SSID or Password input.
+        // This causes the save button event to be fired a couple of ms before the updated value is written into the text boxes, which 
+        // leads into invalid credentials due to outdated values. Therefore the credential update is handled async inside the update event.
+        _credentialUpdateCnt--;
+        if(_credentialUpdateCnt < 1)
+        {
+            WifiModeChamp.setWifiCredentials(ESPUI.getControl(_txtSsid)->value, ESPUI.getControl(_txtPassword)->value, true);
+        }
+    }
+
     auto currentMillis = esp_timer_get_time() / 1000;
     auto seconds = currentMillis / 1000;
     auto minutes = seconds / 60;
@@ -487,14 +497,12 @@ void SystemInfoTab::update()
     seconds %= 60;
     minutes %= 60;
     hours %= 24;
-
     float freeHeap = ESP.getFreeHeap();
     uint32_t heapSize = ESP.getHeapSize();
     float usedHeap = heapSize - freeHeap;
     float maxUsedHeap = ESP.getMaxAllocHeap();
     float freeSketch = ESP.getFreeSketchSpace();
     uint32_t sketchSize = freeSketch + ESP.getSketchSize();
-
     auto performance = String("Uptime:\t\t\t\t") + String(days) + "d " + String(hours) + "h " + String(minutes) + "m " + String(seconds) + "s\n" +
                 "Heap Usage:\t\t\t" + String(usedHeap, 0) + "/" + String(heapSize) + " (" + String(usedHeap / heapSize * 100.0f, 2) + " %)\n" +
                 "Heap Allocated Max:\t" + String(maxUsedHeap, 0) + " (" + String(maxUsedHeap / heapSize * 100.0f, 2) + " %)\n" +

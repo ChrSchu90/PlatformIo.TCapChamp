@@ -29,9 +29,10 @@ struct WiFiOption
 class SystemInfoTab
 {
 private:
-    static const int REBOOT_CLICK_CNT = 5;
+    static const int8_t REBOOT_CLICK_CNT = 5;
     static const int16_t AmountWiFiOptions = 10;
-    int _rebootCnt = REBOOT_CLICK_CNT;
+    int8_t _rebootCnt = REBOOT_CLICK_CNT;
+    int8_t _credentialUpdateCnt = 0;
     uint16_t _tab;
     uint16_t _btnReboot;
     uint16_t _lblPerformance;
@@ -51,7 +52,7 @@ public:
     /// @brief Creates an instance of the SystemInfoTab
     SystemInfoTab();
 
-    /// @brief Update the system information
+    /// @brief Update the system information. NOTE: this function is called cyclically if a client is connected!
     void update();
 };
 
