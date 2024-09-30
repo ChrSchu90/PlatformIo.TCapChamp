@@ -206,7 +206,7 @@ private:
     /// @brief Stop AP mode
     void stopAP();
     /// @brief WiFi event handler to detect disconnects etc.
-    void onWiFiEvent(WiFiEvent_t event);
+    void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info);
     /// @brief Check if timeout has elapsed by using _lastTime
     bool durationPassed(uint32_t intervalSec);
     /// @brief Reset the reconnect timeout

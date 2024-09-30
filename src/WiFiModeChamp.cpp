@@ -215,7 +215,7 @@ void WifiModeChampClass::begin(char const *apSSID, const bool blockInitalConnect
 
     WiFi.mode(WIFI_STA);
     _apPassword = apPassword;
-    _wifiEventListenerId = WiFi.onEvent(std::bind(&WifiModeChampClass::onWiFiEvent, this, std::placeholders::_1));
+    _wifiEventListenerId = WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) { WifiModeChamp.onWiFiEvent(event, info); });
     _state = WifiModeChampState::NETWORK_ENABLED;
 
     // Skip blocking connect if disabled, WiFi not configured or password is invalid
@@ -266,23 +266,10 @@ bool WifiModeChampClass::setWifiCredentials(const String ssid, const String pass
 #ifdef LOG_DEBUG
         LOG_DEBUG(F("WiFiModeChamp"), F("setWifiCredentials"), F("Connecting to new AP..."));
 #endif
-    switch (_state)
-    {
-        case WifiModeChampState::NETWORK_CONNECTED:
-            setState(WifiModeChampState::NETWORK_DISABLED);
-            WiFi.disconnect(true, true);
-            setState(WifiModeChampState::NETWORK_ENABLED);
-            break;
-        case WifiModeChampState::AP_STARTED:
-            setState(WifiModeChampState::NETWORK_DISABLED);
-            clearWifiScanResult();
-            stopAP();
-            setState(WifiModeChampState::NETWORK_ENABLED);
-            break;
-        default:
-            break;
-    }
-
+    stopAP();
+    WiFi.disconnect(true, true);
+    setState(WifiModeChampState::NETWORK_ENABLED);
+    clearWifiScanResult();
     return true;
 }
 
@@ -384,6 +371,9 @@ void WifiModeChampClass::loop()
             {
                 if (WiFi.SSID(i) == _wifiSsid)
                 {
+#ifdef LOG_DEBUG
+                    LOG_DEBUG(F("WiFiModeChamp"), F("loop"), F("Configured SSID `") + _wifiSsid + F("` is available again, start reconnect..."));
+#endif
                     clearWifiScanResult(); // Only clear on success, otherwise the scan result will be error and the wait time will not work
                     stopAP();
                     setState(WifiModeChampState::NETWORK_ENABLED);
@@ -520,11 +510,28 @@ void WifiModeChampClass::stopAP()
 #endif
 }
 
-void WifiModeChampClass::onWiFiEvent(WiFiEvent_t event)
+void WifiModeChampClass::onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info)
 {
-#ifdef LOG_INFO
-    LOG_INFO(F("WiFiModeChamp"), F("onWiFiEvent"), F("Received event=") + event);
+#ifdef LOG_DEBUG
+    LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), 
+    F("mode=") + WiFi.getMode() + 
+    F(" state=") + getStateName() + 
+    F(" event=") + event + 
+    F(" prov_fail_reason=") + info.prov_fail_reason + 
+    F(" info.wifi_sta_disconnected.reason=") + info.wifi_sta_disconnected.reason);
 #endif
+    //if(info.prov_fail_reason == WIFI_PROV_STA_AUTH_ERROR)
+    if((_state == WifiModeChampState::NETWORK_CONNECTING ||  _state == WifiModeChampState::NETWORK_CONNECTING) && 
+        info.wifi_sta_disconnected.reason == WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT)
+    {
+#ifdef LOG_ERROR
+    LOG_ERROR(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFi credentals for SSID `") + _wifiSsid + F("` are invalid! Removing invalid credentials to wait in AP mode for correction..."));
+#endif
+        _wifiSsid = emptyString; 
+        _wifiPassword = emptyString;
+        startAP();
+        return;
+    }
 
     if (_state == WifiModeChampState::NETWORK_DISABLED)
         return;
@@ -532,18 +539,11 @@ void WifiModeChampClass::onWiFiEvent(WiFiEvent_t event)
     switch (event)
     {
     case ARDUINO_EVENT_WIFI_STA_START:
-#ifdef LOG_DEBUG
-        LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_STA_START (State = ") + getStateName() + ")");
-#endif
         WiFi.setHostname(_hostname.c_str());
         break;
-
     case ARDUINO_EVENT_WIFI_STA_GOT_IP:
         if (_state == WifiModeChampState::NETWORK_CONNECTING || _state == WifiModeChampState::NETWORK_RECONNECTING)
         {
-#ifdef LOG_DEBUG
-            LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_STA_GOT_IP (State=") + getStateName() + ")");
-#endif
             _lastTime = -1;
             if(_saveCredentials)
             {
@@ -553,35 +553,25 @@ void WifiModeChampClass::onWiFiEvent(WiFiEvent_t event)
 
             setState(WifiModeChampState::NETWORK_CONNECTED);
         }
-        break;
 
+        break;
     case ARDUINO_EVENT_WIFI_STA_LOST_IP:
     case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
         if (_state == WifiModeChampState::NETWORK_CONNECTED)
         {
-#ifdef LOG_DEBUG
-            if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED)
-                LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_STA_DISCONNECTED (State=") + getStateName() + ")");
-            else
-                LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_STA_LOST_IP (State=") + getStateName() + ")");
-#endif
             setState(WifiModeChampState::NETWORK_DISCONNECTED);
         }
-        break;
 
+        break;
     case ARDUINO_EVENT_WIFI_AP_START:
         // WiFi.setHostname(_hostname.c_str());
         WiFi.softAPsetHostname(_hostname.c_str());
-#ifdef LOG_DEBUG
-        LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_AP_START (State=") + getStateName() + ")");
-#endif
         if (_state == WifiModeChampState::AP_STARTING)
         {
             setState(WifiModeChampState::AP_STARTED);
         }
 
         break;
-
     default:
         break;
     }
