@@ -201,11 +201,7 @@ Webinterface::Webinterface(uint16_t port, Config *config) : _config(config)
         });
 };
 
-bool Webinterface::getClientIsConnected()
-{
-    //ESPUI.ws->count() > 0;
-    return true; // TODO: get if client is connected
-}
+bool Webinterface::getClientIsConnected() { return ESPUI.ws->count() > 0; }
 
 void Webinterface::setSensorTemp(const float temperature)
 {
@@ -256,7 +252,6 @@ SystemInfoTab::SystemInfoTab()
         {
             // Update on open tab
             SystemInfoTab *instance = static_cast<SystemInfoTab *>(UserInfo);
-            instance->update();
             instance->_rebootCnt = REBOOT_CLICK_CNT;
             ESPUI.updateButton(instance->_btnReboot, "Restart " + String(instance->_rebootCnt));
         },
@@ -456,7 +451,6 @@ WifiInfoTab::WifiInfoTab()
         {
             // Update on open tab
             WifiInfoTab *instance = static_cast<WifiInfoTab *>(UserInfo);
-            instance->update();
             ESPUI.updateText(instance->_txtPassword, WifiModeChamp.getConfiguredWiFiPassword());
             ESPUI.updateText(instance->_txtSsid, WifiModeChamp.getConfiguredWiFiSSID());
             instance->updateBtnSaveState();

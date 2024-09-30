@@ -363,7 +363,8 @@ void setupOutputTemperature()
 				if(oldTargetTemp != _targetTemperature)
 					_webinterface->setTargetTemp(_targetTemperature);
 
-				//_webinterface->updateSystemInformation();
+				_webinterface->updateSystemInformation();
+				_webinterface->updateWiFiInformation();
 			}
 
 			return true;

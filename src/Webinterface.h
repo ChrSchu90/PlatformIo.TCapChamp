@@ -146,10 +146,10 @@ public:
     /// @brief Gets if any client is connected 
     bool getClientIsConnected();
 
-    /// @brief Update the System information inside the Webinterface-Tab
+    /// @brief Update the System information inside the Webinterface-Tab if a client is connected
     void updateSystemInformation() { if(getClientIsConnected()) _systemInfoTab->update(); };
 
-    /// @brief Update the WiFi information inside the Webinterface-Tab
+    /// @brief Update the WiFi information inside the Webinterface-Tab if a client is connected
     void updateWiFiInformation() {  if(getClientIsConnected()) _wifiInfoTab->update(); };
 
     /// @brief Updates the sensor temperature inside webinterface
