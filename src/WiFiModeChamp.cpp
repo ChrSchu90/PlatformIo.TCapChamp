@@ -244,6 +244,9 @@ void WifiModeChampClass::begin(char const *apSSID, const bool blockInitalConnect
 
 bool WifiModeChampClass::setWifiCredentials(const String ssid, const String password, bool save)
 {
+#ifdef LOG_DEBUG
+        LOG_DEBUG(F("WiFiModeChamp"), F("setWifiCredentials"), F("Setting new WiFi credentials..."));
+#endif
     if (_wifiSsid == ssid && _wifiPassword == password)
     {
         return false;
@@ -259,15 +262,7 @@ bool WifiModeChampClass::setWifiCredentials(const String ssid, const String pass
         return false;
     }
 
-    if (save && !_wifiSsid.isEmpty() && (_wifiPassword.isEmpty() || _wifiPassword.length() > 7))
-    {
-        Preferences preferences;
-        preferences.begin(KEY_WIFI_SETTINGS_NAMESPACE, false);
-        preferences.putString(KEY_WIFI_SETTINGS_SSID, _wifiSsid);
-        preferences.putString(KEY_WIFI_SETTINGS_PASSWORD, _wifiPassword);
-        preferences.end();
-    }
-
+    _saveCredentials = save && !_wifiSsid.isEmpty() && (_wifiPassword.isEmpty() || _wifiPassword.length() > 7);
     if (_state == WifiModeChampState::NETWORK_CONNECTED || _state == WifiModeChampState::NETWORK_CONNECTING || _state == WifiModeChampState::NETWORK_RECONNECTING)
     {
 #ifdef LOG_DEBUG
@@ -278,6 +273,18 @@ bool WifiModeChampClass::setWifiCredentials(const String ssid, const String pass
     }
 
     return true;
+}
+
+void WifiModeChampClass::saveCurrentCredentials()
+{
+#ifdef LOG_DEBUG
+    LOG_DEBUG(F("WiFiModeChamp"), F("saveCurrentCredentials"), F("Saving current WiFi credentials..."));
+#endif
+    Preferences preferences;
+    preferences.begin(KEY_WIFI_SETTINGS_NAMESPACE, false);
+    preferences.putString(KEY_WIFI_SETTINGS_SSID, _wifiSsid);
+    preferences.putString(KEY_WIFI_SETTINGS_PASSWORD, _wifiPassword);
+    preferences.end();
 }
 
 void WifiModeChampClass::end()
@@ -504,6 +511,10 @@ void WifiModeChampClass::stopAP()
 
 void WifiModeChampClass::onWiFiEvent(WiFiEvent_t event)
 {
+#ifdef LOG_INFO
+    LOG_INFO(F("WiFiModeChamp"), F("onWiFiEvent"), F("Received event=") + event);
+#endif
+
     if (_state == WifiModeChampState::NETWORK_DISABLED)
         return;
 
@@ -520,9 +531,15 @@ void WifiModeChampClass::onWiFiEvent(WiFiEvent_t event)
         if (_state == WifiModeChampState::NETWORK_CONNECTING || _state == WifiModeChampState::NETWORK_RECONNECTING)
         {
 #ifdef LOG_DEBUG
-            LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_STA_GOT_IP (State = ") + getStateName() + ")");
+            LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_STA_GOT_IP (State=") + getStateName() + ")");
 #endif
             _lastTime = -1;
+            if(_saveCredentials)
+            {
+                saveCurrentCredentials();
+                _saveCredentials = false;
+            }
+
             setState(WifiModeChampState::NETWORK_CONNECTED);
         }
         break;
@@ -531,18 +548,12 @@ void WifiModeChampClass::onWiFiEvent(WiFiEvent_t event)
     case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
         if (_state == WifiModeChampState::NETWORK_CONNECTED)
         {
+#ifdef LOG_DEBUG
             if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED)
-            {
-#ifdef LOG_DEBUG
-                LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_STA_DISCONNECTED (State = ") + getStateName() + ")");
-#endif
-            }
+                LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_STA_DISCONNECTED (State=") + getStateName() + ")");
             else
-            {
-#ifdef LOG_DEBUG
-                LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_STA_LOST_IP (State = ") + getStateName() + ")");
+                LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_STA_LOST_IP (State=") + getStateName() + ")");
 #endif
-            }
             setState(WifiModeChampState::NETWORK_DISCONNECTED);
         }
         break;
@@ -551,7 +562,7 @@ void WifiModeChampClass::onWiFiEvent(WiFiEvent_t event)
         // WiFi.setHostname(_hostname.c_str());
         WiFi.softAPsetHostname(_hostname.c_str());
 #ifdef LOG_DEBUG
-        LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_AP_START (State = ") + getStateName() + ")");
+        LOG_DEBUG(F("WiFiModeChamp"), F("onWiFiEvent"), F("WiFiEvent: ARDUINO_EVENT_WIFI_AP_START (State=") + getStateName() + ")");
 #endif
         if (_state == WifiModeChampState::AP_STARTING)
         {

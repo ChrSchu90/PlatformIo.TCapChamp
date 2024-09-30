@@ -194,6 +194,7 @@ private:
     int64_t _lastScanStarted = -1;                                                         // Missis since last WiFi scan has been started
     WifiModeChampScanRequestState _scanRequestState = WifiModeChampScanRequestState::None; // Scan request state
     WiFiEventId_t _wifiEventListenerId = 0;                                                // Event handler ID for WiFi state callbacks
+    bool _saveCredentials = false;                                                         // Save WiFi credentials on next successful connect after they have been changed
 
 private:
     /// @brief Updates the current state
@@ -218,6 +219,8 @@ private:
     void clearWifiScanResult();
     /// @brief Starts a async WiFi scan
     void startWifiScan();
+    /// @brief Saves the currently used credentials
+    void saveCurrentCredentials();
 };
 
 extern WifiModeChampClass WifiModeChamp;

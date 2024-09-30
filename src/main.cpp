@@ -512,8 +512,10 @@ void setup()
 {
 	Serial.begin(115200);
 
-#ifdef LOG_DEBUG
+#ifdef LOG_ERROR
 	delay(3000);
+#endif
+#ifdef LOG_DEBUG
 	LOG_DEBUG(F("Main"), F("setup"), F("Started"));
 #endif
 
