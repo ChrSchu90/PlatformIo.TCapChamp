@@ -263,13 +263,24 @@ bool WifiModeChampClass::setWifiCredentials(const String ssid, const String pass
     }
 
     _saveCredentials = save && !_wifiSsid.isEmpty() && (_wifiPassword.isEmpty() || _wifiPassword.length() > 7);
-    if (_state == WifiModeChampState::NETWORK_CONNECTED || _state == WifiModeChampState::NETWORK_CONNECTING || _state == WifiModeChampState::NETWORK_RECONNECTING)
-    {
 #ifdef LOG_DEBUG
         LOG_DEBUG(F("WiFiModeChamp"), F("setWifiCredentials"), F("Connecting to new AP..."));
 #endif
-        WiFi.disconnect(true, true);
-        setState(WifiModeChampState::NETWORK_TIMEOUT);
+    switch (_state)
+    {
+        case WifiModeChampState::NETWORK_CONNECTED:
+            setState(WifiModeChampState::NETWORK_DISABLED);
+            WiFi.disconnect(true, true);
+            setState(WifiModeChampState::NETWORK_ENABLED);
+            break;
+        case WifiModeChampState::AP_STARTED:
+            setState(WifiModeChampState::NETWORK_DISABLED);
+            clearWifiScanResult();
+            stopAP();
+            setState(WifiModeChampState::NETWORK_ENABLED);
+            break;
+        default:
+            break;
     }
 
     return true;
