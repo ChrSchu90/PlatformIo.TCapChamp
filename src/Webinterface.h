@@ -16,31 +16,6 @@
 #define STYLE_LBL_INOUT_VALUE_OUTPUT "background-color: unset; text-align: left; width: 83.5%;"
 #define STYLE_LBL_INOUT_MANUAL_ENABLE "background-color: unset; text-align: left; width: 70%; vertical-align: bottom;" 
 
-static const char * NO_VALUE = "";                                      // Empty string for no value
-static const String MAX_TEMPERATURE_VALUE = String(MAX_TEMPERATURE);    // Maximum supported temperature value
-static const String MIN_TEMPERATURE_VALUE = String(MIN_TEMPERATURE);    // Minimum supported temperature value
-static const String MAX_POWER_LIMIT_VALUE = String(MAX_POWER_LIMIT);    // Maximum supported power limit value
-static const String MIN_POWER_LIMIT_VALUE = String(MIN_POWER_LIMIT);    // Minimum supported power limit valie
-static const String STEP_POWER_LIMIT_VALUE = String("5");               // Slider step power limit value
-
-/// @brief Implements a system information tab inside the Webinterface
-class SystemInfoTab
-{
-private:
-    static const int REBOOT_CLICK_CNT = 5;
-    uint16_t _tab;
-    uint16_t _btnReboot;
-    uint16_t _lblPerformance;
-    int _rebootCnt = REBOOT_CLICK_CNT;
-
-protected:
-public:
-    /// @brief Creates an instance of the SystemInfoTab
-    SystemInfoTab();
-
-    /// @brief Update the system information
-    void update();
-};
 
 /// @brief Holds a available WiFi option
 struct WiFiOption 
@@ -50,12 +25,16 @@ struct WiFiOption
     uint16_t Control = 0;
 };
 
-/// @brief Implements a WiFi information tab inside the Webinterface
-class WifiInfoTab
+/// @brief Implements a system information tab inside the Webinterface
+class SystemInfoTab
 {
 private:
-    static const int16_t AmountWiFiOptions = 8;
+    static const int REBOOT_CLICK_CNT = 5;
+    static const int16_t AmountWiFiOptions = 10;
+    int _rebootCnt = REBOOT_CLICK_CNT;
     uint16_t _tab;
+    uint16_t _btnReboot;
+    uint16_t _lblPerformance;
     uint16_t _lblInfoTest;
     uint16_t _selSsid;
     uint16_t _txtSsid;
@@ -66,13 +45,13 @@ private:
 
     void updateBtnSaveState();
     void wifiScanCompleted(int16_t networkCnt);
-    
+
 protected:
 public:
-    /// @brief Creates an instance of the TabWifiInfo
-    WifiInfoTab();
+    /// @brief Creates an instance of the SystemInfoTab
+    SystemInfoTab();
 
-    /// @brief Update the WiFi information
+    /// @brief Update the system information
     void update();
 };
 
@@ -132,7 +111,6 @@ private:
     uint16_t _lblPowerOutput;
     AdjustmentTab *_adjustmentTab;
     SystemInfoTab *_systemInfoTab;
-    WifiInfoTab *_wifiInfoTab;
 
 protected:
 public:
@@ -146,11 +124,8 @@ public:
     /// @brief Gets if any client is connected 
     bool getClientIsConnected();
 
-    /// @brief Update the System information inside the Webinterface-Tab if a client is connected
+    /// @brief Update the System and WiFi information inside the Webinterface-Tab if a client is connected
     void updateSystemInformation() { if(getClientIsConnected()) _systemInfoTab->update(); };
-
-    /// @brief Update the WiFi information inside the Webinterface-Tab if a client is connected
-    void updateWiFiInformation() {  if(getClientIsConnected()) _wifiInfoTab->update(); };
 
     /// @brief Updates the sensor temperature inside webinterface
     /// @param temperature the new temperature
