@@ -135,32 +135,6 @@ bool updateThermistorInTemperature()
 	return false;
 }
 
-/// @brief Setup reading of input thermistor
-void setupThermistorInputReading()
-{
-#ifdef LOG_DEBUG
-	LOG_DEBUG(F("Main"), F("setupThermistorInputReading"), F("Started"));
-#endif
-
-	// initial reading without building a median
-	_thermistorInTemperature = getCurrentThermistorInTemperature(true);
-	_timers.every(
-		TEMP_IN_SAMPLE_CYCLE,
-		[](void *opaque) -> bool
-		{
-			if (updateThermistorInTemperature() && _webinterface)
-			{
-				_webinterface->setSensorTemp(_thermistorInTemperature);
-			}
-
-			return true; // Keep timer running
-		});
-
-#ifdef LOG_DEBUG
-	LOG_DEBUG(F("Main"), F("setupThermistorInputReading"), F("Completed"));
-#endif
-}
-
 /// @brief Update Weather API temperature timer callback
 /// NOTE: The timer registration is handled by updateWeatherApiTemperature since
 /// based on the API response the timer will be restarted with different ticks
@@ -219,53 +193,6 @@ bool updateWeatherApiTemperatureTick(void *opaque)
 
 	// Stop current timer, a new one is created by updateWeatherApiTemperature depending if failed or successful
 	return false;
-}
-
-/// @brief Setup for Weather API
-void setupWeatherApi()
-{
-#ifdef LOG_DEBUG
-	LOG_DEBUG(F("Main"), F("setupWeatherApi"), F("Started"));
-#endif
-	auto apiKey = String(WEATHER_API_KEY);
-	if (apiKey.length() < 30)
-	{
-#ifdef LOG_ERROR
-		LOG_ERROR(F("Main"), F("setupWeatherApi"), F("API key missing or invalid, weather API can't be used!"));
-#endif
-		return;
-	}
-
-	if (WEATHER_CITY_ID > 0)
-	{
-#ifdef LOG_INFO
-		LOG_INFO(F("Main"), F("setupWeatherApi"), F("Using City ID ") + WEATHER_CITY_ID);
-#endif
-		_weatherApi = new OpenWeatherMap(apiKey, WEATHER_CITY_ID);
-	}
-	else if (abs(WEATHER_LATITUDE) > 0 && abs(WEATHER_LONGITUDE) > 0)
-	{
-#ifdef LOG_INFO
-		LOG_INFO(F("Main"), F("setupWeatherApi"), F("Using Latitude ") + WEATHER_LATITUDE + F(" and Longitude ") + WEATHER_LONGITUDE);
-#endif
-		_weatherApi = new OpenWeatherMap(apiKey, WEATHER_LATITUDE, WEATHER_LONGITUDE);
-	}
-	else
-	{
-#ifdef LOG_ERROR
-		LOG_ERROR(F("Main"), F("setupWeatherApi"), F("Location missing, please define CityID or Latitude + Longitude!"));
-#endif
-		return;
-	}
-#ifdef LOG_DEBUG
-	LOG_DEBUG(F("Main"), F("setupWeatherApi"), F("API URL ") + _weatherApi->apiUrl);
-#endif
-	if (updateWeatherApiTemperature())
-	{
-#ifdef LOG_INFO
-		LOG_INFO(F("Main"), F("setupWeatherApi"), F("initial temperature ") + _weatherApiTemperature);
-#endif
-	}
 }
 
 /// @brief Gets the real input temperature that is used to calculate the power limit and output temperature
@@ -337,42 +264,6 @@ bool updateOutputTemperature()
 	return changed;
 }
 
-/// @brief Setup digital potentiometer for output temperature
-void setupOutputTemperature()
-{
-#ifdef LOG_DEBUG
-	LOG_DEBUG(F("Main"), F("setupOutputTemperature"), F("Started"));
-#endif
-
-	_spiDigitalPoti = new SPIClass(SPI_BUS_THERMISTOR_OUT);
-	_spiDigitalPoti->begin();
-	pinMode(_spiDigitalPoti->pinSS(), OUTPUT);
-	pinMode(GPIO_FAILOVER_OUT, OUTPUT);
-
-	updateOutputTemperature();
-	_timers.every(
-		TEMP_OUT_UPDATE_CYCLE,
-		[](void *opaque) -> bool
-		{
-			if (_webinterface)
-			{
-				auto oldTargetTemp = _targetTemperature;
-				if(updateOutputTemperature())
-					_webinterface->setOutputTemp(_outputTemperature);
-				
-				if(oldTargetTemp != _targetTemperature)
-					_webinterface->setTargetTemp(_targetTemperature);
-
-				_webinterface->updateSystemInformation();
-			}
-
-			return true;
-		});
-#ifdef LOG_DEBUG
-	LOG_DEBUG(F("Main"), F("setupOutputTemperature"), F("Completed"));
-#endif
-}
-
 /// @brief Sets the powerlimit via DAC 0-10V, updates the _powerLimitPercent and webinterface
 /// @attention T-Cap need at least a 10% power limit, less is detected as disabled demand control
 /// @param percent The new power limit in %
@@ -399,6 +290,123 @@ bool setPowerLimit(uint8_t percent, bool force = false)
 	}
 
 	return true;
+}
+
+/// @brief Put your main code here, to run repeatedly:
+void loop()
+{
+	_timers.tick();
+	WifiModeChamp.loop();
+}
+
+/// @brief Setup for Weather API
+void setupWeatherApi()
+{
+#ifdef LOG_DEBUG
+	LOG_DEBUG(F("Main"), F("setupWeatherApi"), F("Started"));
+#endif
+	auto apiKey = String(WEATHER_API_KEY);
+	if (apiKey.length() < 30)
+	{
+#ifdef LOG_ERROR
+		LOG_ERROR(F("Main"), F("setupWeatherApi"), F("API key missing or invalid, weather API can't be used!"));
+#endif
+		return;
+	}
+
+	if (WEATHER_CITY_ID > 0)
+	{
+#ifdef LOG_INFO
+		LOG_INFO(F("Main"), F("setupWeatherApi"), F("Using City ID ") + WEATHER_CITY_ID);
+#endif
+		_weatherApi = new OpenWeatherMap(apiKey, WEATHER_CITY_ID);
+	}
+	else if (abs(WEATHER_LATITUDE) > 0 && abs(WEATHER_LONGITUDE) > 0)
+	{
+#ifdef LOG_INFO
+		LOG_INFO(F("Main"), F("setupWeatherApi"), F("Using Latitude ") + WEATHER_LATITUDE + F(" and Longitude ") + WEATHER_LONGITUDE);
+#endif
+		_weatherApi = new OpenWeatherMap(apiKey, WEATHER_LATITUDE, WEATHER_LONGITUDE);
+	}
+	else
+	{
+#ifdef LOG_ERROR
+		LOG_ERROR(F("Main"), F("setupWeatherApi"), F("Location missing, please define CityID or Latitude + Longitude!"));
+#endif
+		return;
+	}
+#ifdef LOG_DEBUG
+	LOG_DEBUG(F("Main"), F("setupWeatherApi"), F("API URL ") + _weatherApi->apiUrl);
+#endif
+	if (updateWeatherApiTemperature())
+	{
+#ifdef LOG_INFO
+		LOG_INFO(F("Main"), F("setupWeatherApi"), F("initial temperature ") + _weatherApiTemperature);
+#endif
+	}
+}
+
+/// @brief Setup reading of input thermistor
+void setupThermistorInputReading()
+{
+#ifdef LOG_DEBUG
+	LOG_DEBUG(F("Main"), F("setupThermistorInputReading"), F("Started"));
+#endif
+
+	// initial reading without building a median
+	_thermistorInTemperature = getCurrentThermistorInTemperature(true);
+	_timers.every(
+		TEMP_IN_SAMPLE_CYCLE,
+		[](void *opaque) -> bool
+		{
+			if (updateThermistorInTemperature() && _webinterface)
+			{
+				_webinterface->setSensorTemp(_thermistorInTemperature);
+			}
+
+			return true; // Keep timer running
+		});
+
+#ifdef LOG_DEBUG
+	LOG_DEBUG(F("Main"), F("setupThermistorInputReading"), F("Completed"));
+#endif
+}
+
+/// @brief Setup digital potentiometer for output temperature
+void setupOutputTemperature()
+{
+#ifdef LOG_DEBUG
+	LOG_DEBUG(F("Main"), F("setupOutputTemperature"), F("Started"));
+#endif
+
+	_spiDigitalPoti = new SPIClass(SPI_BUS_THERMISTOR_OUT);
+	//_spiDigitalPoti->setClockDivider(SPI_CLOCK_DIV4); // Default SPI_CLOCK_DIV16 (1 MHz)
+	_spiDigitalPoti->begin();
+	pinMode(_spiDigitalPoti->pinSS(), OUTPUT);
+	pinMode(GPIO_FAILOVER_OUT, OUTPUT);
+
+	updateOutputTemperature();
+	_timers.every(
+		TEMP_OUT_UPDATE_CYCLE,
+		[](void *opaque) -> bool
+		{
+			if (_webinterface)
+			{
+				auto oldTargetTemp = _targetTemperature;
+				if(updateOutputTemperature())
+					_webinterface->setOutputTemp(_outputTemperature);
+				
+				if(oldTargetTemp != _targetTemperature)
+					_webinterface->setTargetTemp(_targetTemperature);
+
+				_webinterface->updateSystemInformation();
+			}
+
+			return true;
+		});
+#ifdef LOG_DEBUG
+	LOG_DEBUG(F("Main"), F("setupOutputTemperature"), F("Completed"));
+#endif
 }
 
 /// @brief Setup of the power limiter via 0-10V analog output
@@ -437,13 +445,6 @@ void setupPowerLimit()
 				return true;
 			});
 	}
-}
-
-/// @brief Put your main code here, to run repeatedly:
-void loop()
-{
-	_timers.tick();
-	WifiModeChamp.loop();
 }
 
 /// @brief Setup for the configuration for loading and storing none volatile data
