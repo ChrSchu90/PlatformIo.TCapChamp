@@ -16,7 +16,8 @@
 
 static const uint8_t GPIO_THERMISTOR_IN = GPIO_NUM_36;										// GPIO used for real input temperature from thermistor
 static const uint8_t SPI_BUS_THERMISTOR_OUT = VSPI;											// SPI bus used for digital potentiometer for output temperature
-static const uint8_t GPIO_FAILOVER_OUT = GPIO_NUM_27;										// GPIO used as digital output to signal that the output is now valid (failover via relays or LED)
+static const uint8_t GPIO_FAILOVER_OUT = GPIO_NUM_27;										// GPIO used as digital output to signal that the output temperature is now valid (failover via relays or LED)
+static const uint8_t GPIO_FAILOVER_IN = GPIO_NUM_25;										// GPIO used as digital output to signal that the input temperature is now required (open failover via relays or LED)
 static const float SUPPLY_VOLTAGE = 3.3;													// Maximum Voltage ADC input
 static const unsigned int TEMP_IN_DEVIDER_RESISTANCE = 10000;								// Voltage divider resistor value for input temperature in Ohm
 static const unsigned int TEMP_IN_SAMPLE_CYCLE = 10;										// Sample rate to build the median in milliseconds
@@ -24,6 +25,7 @@ static const unsigned int TEMP_IN_UPDATE_CYCLE = 1000;										// Update every 
 static const unsigned int TEMP_IN_SAMPLE_CNT = TEMP_IN_UPDATE_CYCLE / TEMP_IN_SAMPLE_CYCLE; // Amount of samples for input thermistor median calculation
 static const unsigned int WEATHER_API_UPDATE_CYCLE = 600000;	   							// Update time of the temperture by the weather API in milliseconds
 static const unsigned int WEATHER_API_UPDATE_CYCLE_FAILED = 10000; 							// Update time of the temperture by the weather API if the request has failed in milliseconds
+static const bool PREFERE_WEATHER_API_OVER_INPUT_SENSOR = true;								// Defines that the Weather API has an higher preority than the real input temperature sensor
 static const unsigned int TEMP_OUT_UPDATE_CYCLE = 1000;										// Update time of the output temperature in milliseconds
 static const uint16_t DIGI_POTI_STEPS = 256;												// Maximum amount of steps that the digital potentiometer supports
 static const uint16_t DIGI_POTI_STEP_MIN = 0;												// Minimum step of the digital potentiometer to limit maximum current (if no pre-resistor is used)
@@ -74,26 +76,20 @@ float getCurrentThermistorInTemperature(bool logError)
 	float voltage = readAdcVoltageCorrected(GPIO_THERMISTOR_IN);
 	if (!(voltage > 0))
 	{
-		if (logError)
-		{
 #ifdef LOG_ERROR
+		if (logError)
 			LOG_ERROR(F("Main"), F("getCurrentThermistorInTemperature"), F("Voltage unplausible, devider resistor defect? voltage=") + voltage);
 #endif
-		}
-
 		return NAN;
 	}
 
 	float resistance = TEMP_IN_DEVIDER_RESISTANCE * voltage / (SUPPLY_VOLTAGE - voltage);
 	if (resistance == infinityf())
 	{
-		if (logError)
-		{
 #ifdef LOG_ERROR
+		if (logError)
 			LOG_ERROR(F("Main"), F("getCurrentThermistorInTemperature"), F("No external temperature sensor connected. resistance=") + resistance);
 #endif
-		}
-
 		return NAN;
 	}
 
@@ -201,31 +197,20 @@ bool updateWeatherApiTemperatureTick(void *opaque)
 float getInputTemperature()
 {
 	// Use manual temperature as highest priority
-	if (_config && _config->temperatureConfig->isManualInputTemp())
-	{
+	if (_config->temperatureConfig->isManualInputTemp()) 
 		return _config->temperatureConfig->getManualInputTemperature();
-	}
-
-	// Prefer weather API
-	if (!isnanf(_weatherApiTemperature))
-	{
+	// Use Weather API as preferred input by static setting
+	if (PREFERE_WEATHER_API_OVER_INPUT_SENSOR && !isnanf(_weatherApiTemperature)) 
 		return _weatherApiTemperature;
-	}
-
-	// Use input sensor as fallback
-	if (!isnanf(_thermistorInTemperature))
-	{
+	// Use real temperature sensor if Weather API is not preferred by static setting
+	if (!isnanf(_thermistorInTemperature)) 
 		return _thermistorInTemperature;
-	}
-
+	// Use Weather API
+	if (!isnanf(_weatherApiTemperature)) 
+		return _weatherApiTemperature;
+	
 	// Use the manual temperature as fallback if no API or input sensor value is available
-	if (_config)
-	{
-		return _config->temperatureConfig->getManualInputTemperature();
-	}
-
-	// It is not possible to determine a input temperature
-	return NAN;
+	return _config->temperatureConfig->getManualInputTemperature();
 }
 
 /// @brief Updates the _outputTemperature based on getInputTemperature()
@@ -299,7 +284,7 @@ void loop()
 	WifiModeChamp.loop();
 }
 
-/// @brief Setup for Weather API
+/// @brief Setup for Weather API with blocking initial request
 void setupWeatherApi()
 {
 #ifdef LOG_DEBUG
@@ -346,15 +331,22 @@ void setupWeatherApi()
 	}
 }
 
-/// @brief Setup reading of input thermistor
+/// @brief Setup reading of input thermistor with blocking initial reading
 void setupThermistorInputReading()
 {
 #ifdef LOG_DEBUG
 	LOG_DEBUG(F("Main"), F("setupThermistorInputReading"), F("Started"));
 #endif
 
-	// initial reading without building a median
+	// Configure failover output pin an enable it 
+	pinMode(GPIO_FAILOVER_IN, OUTPUT);
+	digitalWrite(GPIO_FAILOVER_IN, HIGH);
+
+	delay(100); // Wait a littlebit of time after relai has been turned on, so we can read initial temperature
 	_thermistorInTemperature = getCurrentThermistorInTemperature(true);
+#ifdef LOG_DEBUG
+	LOG_DEBUG(F("Main"), F("setupThermistorInputReading"), F("Inital in termperature=") + _thermistorInTemperature);
+#endif
 	_timers.every(
 		TEMP_IN_SAMPLE_CYCLE,
 		[](void *opaque) -> bool
@@ -372,7 +364,7 @@ void setupThermistorInputReading()
 #endif
 }
 
-/// @brief Setup digital potentiometer for output temperature
+/// @brief Setup digital potentiometer for output temperature with blocking initial update of output temperature
 void setupOutputTemperature()
 {
 #ifdef LOG_DEBUG
@@ -521,10 +513,10 @@ void setup()
 #endif
 
 	setupConfiguration();
-	setupThermistorInputReading();
 	setupWifiManager();
 	setupWeatherApi();
 	setupPowerLimit();
+	setupThermistorInputReading();
 	setupOutputTemperature();
 	setupWebinterface();
 
