@@ -39,7 +39,9 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 | [Prototype Board](https://www.amazon.de/dp/B08F2TS7ZC)     | &#10003; | For final board                                                               |
 | 10k resistor                                               | &#10003; | Voltage devider for input sensor                                              |
 | 5k resistor                                                | &#10003; | Pre-Resistor for Digital potentiometer (defines the possible output temperature, in my case +30°C to -20°C) |
-| [DFRobot Gravity I2C DAC Module](https://www.dfrobot.com/product-2613.html)      | &#10007; | Optional I2C DAC 0-10V for Demand Control                                                   |
+| 2k resistor                                                | &#10003; | GND pulldown for Digital potentiometer                                        |
+| [4CH 5V Relay Module](https://www.amazon.de/dp/B09FS5G1Y9)| &#10007; | Optional relay module for fallback implementation, not required but highly recommended!  |
+| [DFRobot Gravity I2C DAC Module](https://www.dfrobot.com/product-2613.html)      | &#10007; | Optional I2C DAC 0-10V for Demand Control               |
 | [Breadboard Kit](https://www.amazon.de/dp/B0B18G3V5T)      | &#10007; | Prototype Board for testing                                                   |
 | [Connectors](https://www.amazon.de/dp/B087RN8FDZ)          | &#10007; | Connector for wires                                                           |
 | [Socket for ESP](https://www.amazon.de/dp/B07DBY753C)      | &#10007; | Socket for ESP                                                                |
