@@ -8,11 +8,11 @@ on:
     tags:
       - 'v*'
     paths-ignore:
-      - '*.md'
-      - '*.jpg'
-      - '*.fzz'
-      - '*.fzpz'
-      - '*.xlsx'
+      - '**/*.md'
+      - '**/*.jpg'
+      - '**/*.fzz'
+      - '**/*.fzpz'
+      - '**/*.xlsx'
   pull_request:
     branches:
       - 'main'
