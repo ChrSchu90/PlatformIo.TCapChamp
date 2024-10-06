@@ -29,15 +29,15 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 > **There is a danger to life due to high voltage (230V/400V) within the device!**
 
 ## Features
-| Feature                                          | Completed |
-| ------------------------------------------------ | --------- |
-| Automatic switch between WiFi AP and Client mode | &#10003;  |
-| Hardware sensor for input temperature            | &#10003;  |
-| Weather API for input temperature (OpenWeather)  | &#10003;  |
-| 0V-10V Demand control (Requires optional board)  | &#10003;  |
-| OTA Updates                                      | &#10003;  |
-| Captive Portal for initial WiFi configuration    | &#10003;  |
-| Custom webinterface for better accessibility     | &#10007;  |
+| Feature                                              | Completed |
+| ---------------------------------------------------- | --------- |
+| Automatic switch between WiFi AP and Client mode     | &#10003;  |
+| Hardware sensor for input temperature                | &#10003;  |
+| Weather API for input temperature (OpenWeather)      | &#10003;  |
+| 0V-10V Demand control (Requires optional board)      | &#10003;  |
+| OTA Updates                                          | &#10003;  |
+| Captive Portal (if not working use IP `192.168.4.1`) | &#10003;  |
+| Custom webinterface for better accessibility         | &#10007;  |
 
 
 ## Bill of Material & Tools
