@@ -46,23 +46,35 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 | [ESP32 NodeMCU-32S](https://www.amazon.de/dp/B0CQSWC67G)   | &#10003; | Microcontroller                                                               |
 | [MCP4151-503E/P](https://agelektronik.de/digital-potentiometer/6459-mcp4151-503ep-digital-potentiometer50k256-steps1-kanalspidip-8.html)   | &#10003; | Digital Potentiometer 50K, 256 steps, SPI   |
 | [Electrical wire 0.5mm² 20awg](https://www.amazon.de/dp/B08BZKR22W) | &#10003; | For bridges on custom Controller board                               |
+| [Electrical wire 0.5mm² 20awg](https://www.amazon.de/dp/B0BJKHBW2Z) | &#10003; | For connection between bords and relay                               |
 | [Electrical wire 18awg 2×0.75mm²](https://www.amazon.de/dp/B0B7WSMR8L) | &#10007; | Connection optional 0-10V Demand Control to T-Cap                 |
 | [Electrical wire 18awg 4×0.75mm²](https://www.amazon.de/dp/B0BFWL2RZB) | &#10003; | Connection temperature output to T-Cap                            |
 | [Prototype Board](https://www.amazon.de/dp/B08F2TS7ZC)     | &#10003; | For final board                                                               |
 | 10k resistor                                               | &#10003; | Voltage devider for input sensor                                              |
 | 5k resistor                                                | &#10003; | Pre-Resistor for Digital potentiometer (defines the possible output temperature, in my case +30°C to -20°C) |
 | 2k resistor                                                | &#10003; | GND pulldown for unused Digital potentiometer terminal                        |
-| [4CH 5V Relay Module](https://www.amazon.de/dp/B09FS5G1Y9)| &#10007; | Optional relay module (High-Level-Trigger) for fallback implementation, not required but highly recommended!  |
+| [4CH 5V Relay Module](https://www.amazon.de/dp/B09FS5G1Y9) | &#10007; | Optional relay module (High-Level-Trigger) for fallback implementation, not required but highly recommended!  |
 | [DFRobot Gravity I2C DAC Module](https://www.dfrobot.com/product-2613.html) | &#10007; | Optional I2C DAC 0-10V for Demand Control                    |
 | [Breadboard Kit](https://www.amazon.de/dp/B0B18G3V5T)      | &#10007; | Prototype Board for testing                                                   |
 | [Connectors](https://www.amazon.de/dp/B087RN8FDZ)          | &#10007; | Connector for wires                                                           |
 | [Socket for ESP](https://www.amazon.de/dp/B07DBY753C)      | &#10007; | Socket for ESP                                                                |
 | [IC Sockets](https://www.amazon.de/dp/B01GOLSUAU)          | &#10007; | IC Socket for MCP4151                                                         |
 
+### Housing (example)
+| Name                                                                  | Description                             |
+| --------------------------------------------------------------------- | --------------------------------------- |
+| [Housing](https://www.amazon.de/dp/B0CKT697NP)                        | Housing for Controller, Relay...        |
+| [USB-C Connector](https://www.amazon.de/dp/B0BQGBWVWM)                | USB conector for power or PC            |
+| [4-Pin Connector Temperature](https://www.amazon.de/dp/B07TJK2Z7M)    | Connector for temperature input/output  |
+| [2-Pin Connector Demand Control](https://www.amazon.de/dp/B07JMYCPSN) | Connector for Demand control (optional) |
+| [Mount for boards](https://www.amazon.de/dp/B09C21MS45)               | Connector for Demand control (optional) |
+| [Power Supply (USB-C)](https://www.amazon.de/dp/B07TMPC9FG)           | External USB-C power supply             |
 
 ### Tools
 - Soldering iron, Solder...
 - Multimeter
+- Drill (for housing)
+- Glue (for housing board mounts)
 
 ## Electrical Drawings
 You can find the the electrical drawings and parts inside `Documentation\Fritzing` as [Fritzing](https://fritzing.org/) (freeware) project.
