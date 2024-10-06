@@ -79,8 +79,10 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 ## Electrical Drawings
 You can find the the electrical drawings and parts inside `Documentation\Fritzing` as [Fritzing](https://fritzing.org/) (freeware) project.
 
+### Without failover relay
 <img src="Documentation/Screenshots/Breadboard Drawing.jpg" alt="drawing" width="258"/><img src="Documentation/Screenshots/Schematic Drawing.jpg" alt="drawing" width="376" />
 
+### With failover relay (highly recommended)
 <img src="Documentation/Screenshots/Breadboard Failover Drawing.jpg" alt="drawing" width="366" /><img src="Documentation/Screenshots/Schematic Failover Drawing.jpg" alt="drawing" width="369" />
 
 ## Final board (example)
