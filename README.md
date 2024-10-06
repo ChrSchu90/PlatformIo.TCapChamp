@@ -149,6 +149,10 @@ To do so you can define temperature areas and its power limit inside the UI.
 > The connection between the T-Cap and the Controller should only be done by a trained professional. 
 > **There is a danger to life due to high voltage (230V/400V) within the device!**
 
+> [!IMPORTANT]
+> Please check the manual carefully to your specific device, this instruction is based on the `WH-SQC16H9E8`!
+> In case you have another unit you might need to use other connectors within the device!
+
 For all connection to the T-Cap I've used `0.75mm²`, you can also use another cable but **you need to use at least `0.3mm²`!**
 
 <img src="Documentation/Screenshots/IndoorModule.jpg" alt="drawing" width="465" />
@@ -164,7 +168,8 @@ In case you don't have an external sensor you should connect a fallback resistor
 > [!IMPORTANT]
 > If there is no temperature sensor available for more than 5s the Device will notice it and log an error.
 > Therefore it is required to add an fallback resistor sensor if there is no real sensor connected to the controller.
-> This is the reason why the fallback 4CH Relay Module is highly recommended!
+> This is the reason why the fallback 4CH Relay Module is highly recommended, that will connect the input
+> sensor to the T-Cap while the controller is turned off or during boot until it is ready!
 
 <img src="Documentation/Screenshots/MainCircuitBoard.jpg" alt="drawing" width="465" />
 
@@ -177,7 +182,7 @@ In case you don't have an external sensor you should connect a fallback resistor
 
 > [!IMPORTANT]
 > Make sure you have connected the 0-10V GND and 10V to the correct connectors, 
-> unlike temperature, it is important to pay attention to polarity!
+> unlike temperature it is important to pay attention to polarity!
 
 <img src="Documentation/Screenshots/OptionalCircuitBoard.jpg" alt="drawing" width="465" />
 
