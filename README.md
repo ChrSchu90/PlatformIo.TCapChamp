@@ -71,7 +71,6 @@ You can find the the electrical drawings and parts inside `Documentation\Fritzin
 
 <img src="Documentation/Screenshots/Schematic Drawing.jpg" alt="drawing" width="376" />
 
-
 ## Final board (example)
 <img src="Documentation/Images/Image1.jpg" alt="drawing" width="283" /><img src="Documentation/Images/Image2.jpg" alt="drawing" width="250" />
 
@@ -81,6 +80,20 @@ You can find the the electrical drawings and parts inside `Documentation\Fritzin
 <img src="Documentation/Screenshots/Webinterface_Adjustment.jpg" alt="drawing" width="300" />
 
 <img src="Documentation/Screenshots/Webinterface_SystemInfo.jpg" alt="drawing" width="300" /><img src="Documentation/Screenshots/Webinterface_WiFiInfo.jpg" alt="drawing" width="300" />
+
+## Building the Project
+For privacy reasons some settings are defined inside a header file that is excluded from git.
+Since this information are used inside the classes copy and rename the file `Secrets.template.h` to `Secrets.h` to resolve build errors after cloning.
+
+## Weather API
+If there is no input sensor available you can use the integrated [OpenWeather API](https://openweathermap.org/current).
+To do so you need to create a [free account](https://home.openweathermap.org/users/sign_up) to receive the required `API Key`.
+
+The city ID can be taken from [OpenWeather](https://openweathermap.org) by searching for the location and than be taken from URL (https://openweathermap.org/city/**xxxxxxx**)
+As alternative you can also use the `Latitude` + `Longitude` that can be taken from [Google Maps](https://www.google.com/maps) by right-click menu
+
+> [!NOTE]
+> Requests for free accounts are limited to to 60 calls/minute or 1,000,000 calls/month
 
 ## Temperature Adjustment
 
@@ -170,6 +183,10 @@ For all connection to the T-Cap I've used `0.75mm²`, you can also use another c
 ### Temperature
 If you already use a external temperature sensor, you should use it as input temperature for the controller.
 In case you don't have an external sensor you should connect a fallback resistor to simulate e.g. 10°C.
+
+> [!TIP]
+> Alternatively you can also connect the temperature to the outdoor device instead of the indoor device.
+> Make sure to check the manual for the correct wiring!
 
 > [!NOTE]
 > You need to to change the setting of the T-Cap to use the alternative outdoor sensor, 
