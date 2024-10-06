@@ -13,6 +13,16 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 > You can find the measurements, charts and calculations inside the [TestsAndCharts.xlsx](Documentation/TestsAndCharts.xlsx),
 > device specific information can be taken from the [T-Cap Service Manual (PDF)](https://www.kaelte-bast.de/dateien_neu13/Panasonic/01-produktunterlagen/aquarea/produkte/waermepumpen/t-cap/sqc/handbuch_englisch/sm_wh-sqc09h3e8%2Cwh-sqc12.16h9e8_%28papamy1704053ce%29.pdf)
 
+> [!TIP]
+> Most important Manual pages:
+> - 49 Wiring Connection Diagram
+> - 53 Electronic Circuit Diagram
+> - 56 Main Circuit Board 
+> - 57 Sub Printed Circuit Board
+> - 76 Cable management
+> - 78 Temperaute Sensor
+> - 88 Demand Control
+> - 128 Alternative Outdoor Ambient Sensor Control
 
 > [!Caution]
 > The connection between the T-Cap and the Controller should only be done by a trained professional. 
