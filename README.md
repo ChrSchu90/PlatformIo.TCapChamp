@@ -96,7 +96,7 @@ You can find the the electrical drawings and parts inside `Documentation\Fritzin
 ## Building the Project
 
 > [!NOTE]
-> This project requires [Visual Studio Code](https://code.visualstudio.com/download) with the  
+> This project requires [Visual Studio Code](https://code.visualstudio.com/download) with the 
 > [PlatformIO IDE](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide) and 
 > [C/C++ Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools-extension-pack) extensions
 > for compile and upload of the firmware to the Microcontroller.
