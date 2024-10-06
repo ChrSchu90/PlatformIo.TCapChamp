@@ -24,7 +24,7 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 | Automatic switch between WiFi AP and Client mode | &#10003;  |
 | Hardware sensor for input temperature            | &#10003;  |
 | Weather API for input temperature (OpenWeather)  | &#10003;  |
-| 0V-10V Demand control                            | &#10003;  |
+| 0V-10V Demand control (Requires optional board)  | &#10003;  |
 | OTA Updates                                      | &#10003;  |
 | Captive Portal for initial WiFi configuration    | &#10003;  |
 | Custom webinterface for better accessibility     | &#10007;  |
@@ -35,13 +35,15 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 | ---------------------------------------------------------- | -------- | ----------------------------------------------------------------------------- |
 | [ESP32 NodeMCU-32S](https://www.amazon.de/dp/B0CQSWC67G)   | &#10003; | Microcontroller                                                               |
 | [MCP4151-503E/P](https://agelektronik.de/digital-potentiometer/6459-mcp4151-503ep-digital-potentiometer50k256-steps1-kanalspidip-8.html)   | &#10003; | Digital Potentiometer 50K, 256 steps, SPI   |
-| [Electrical wire](https://www.amazon.de/dp/B08BZKR22W)     | &#10003; |                                                                               |
+| [Electrical wire 0.5mm² 20awg](https://www.amazon.de/dp/B08BZKR22W) | &#10003; | For bridges on custom Controller board                               |
+| [Electrical wire 18awg 2×0.75mm²](https://www.amazon.de/dp/B0B7WSMR8L) | &#10007; | Connection optional 0-10V Demand Control to T-Cap                 |
+| [Electrical wire 18awg 4×0.75mm²](https://www.amazon.de/dp/B0BFWL2RZB) | &#10003; | Connection temperature output to T-Cap                            |
 | [Prototype Board](https://www.amazon.de/dp/B08F2TS7ZC)     | &#10003; | For final board                                                               |
 | 10k resistor                                               | &#10003; | Voltage devider for input sensor                                              |
 | 5k resistor                                                | &#10003; | Pre-Resistor for Digital potentiometer (defines the possible output temperature, in my case +30°C to -20°C) |
-| 2k resistor                                                | &#10003; | GND pulldown for Digital potentiometer                                        |
+| 2k resistor                                                | &#10003; | GND pulldown for unused Digital potentiometer terminal                        |
 | [4CH 5V Relay Module](https://www.amazon.de/dp/B09FS5G1Y9)| &#10007; | Optional relay module (High-Level-Trigger) for fallback implementation, not required but highly recommended!  |
-| [DFRobot Gravity I2C DAC Module](https://www.dfrobot.com/product-2613.html)      | &#10007; | Optional I2C DAC 0-10V for Demand Control               |
+| [DFRobot Gravity I2C DAC Module](https://www.dfrobot.com/product-2613.html) | &#10007; | Optional I2C DAC 0-10V for Demand Control                    |
 | [Breadboard Kit](https://www.amazon.de/dp/B0B18G3V5T)      | &#10007; | Prototype Board for testing                                                   |
 | [Connectors](https://www.amazon.de/dp/B087RN8FDZ)          | &#10007; | Connector for wires                                                           |
 | [Socket for ESP](https://www.amazon.de/dp/B07DBY753C)      | &#10007; | Socket for ESP                                                                |
@@ -55,11 +57,15 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 ## Electrical Drawings
 You can find the the electrical drawings and parts inside `Documentation\Fritzing` as [Fritzing](https://fritzing.org/) (freeware) project.
 
-<img src="Documentation/Screenshots/Breadboard Drawing.jpg" alt="drawing" width="250" /><img src="Documentation/Screenshots/Schematic Drawing.jpg" alt="drawing" width="320" />
+<img src="Documentation/Screenshots/Breadboard Drawing.jpg" alt="drawing" width="250"/><img src="Documentation/Screenshots/Breadboard Failover Drawing.jpg" alt="drawing" width="366" />
+
+<img src="Documentation/Screenshots/Schematic Drawing.jpg" alt="drawing" width="376" />
 
 
 ## Final board (example)
 <img src="Documentation/Images/Image1.jpg" alt="drawing" width="283" /><img src="Documentation/Images/Image2.jpg" alt="drawing" width="250" />
+
+<img src="Documentation/Images/Image3.jpg" alt="drawing" width="283" />
 
 ## Webinterface
 <img src="Documentation/Screenshots/Webinterface_Adjustment.jpg" alt="drawing" width="300" />
@@ -69,7 +75,7 @@ You can find the the electrical drawings and parts inside `Documentation\Fritzin
 ## Temperature Adjustment
 
 ### The cheap solution
-A common way to manipulate the temperature is to connect a parallel resistor (e.g. 75k Ω) to the external sensor. The problem with this approach is that a thermal resistor isn't linear and because of that the temperature offset increases as the real temperature goes down:
+A common way to manipulate the temperature is to connect a parallel resistor (e.g. 75kΩ) to the external sensor. The problem with this approach is that a thermal resistor isn't linear and because of that the temperature offset increases as the real temperature goes down:
 
 <img src="Documentation/Screenshots/ParallelResistorChart.jpg" alt="drawing" width="450" />
 
@@ -136,6 +142,44 @@ To do so you can define temperature areas and its power limit inside the UI.
 > [!NOTE]
 > Power limit can be defined in a range between `10%-100%` in `5%` steps.
 > Values `<10%` are handled as `not active`
+
+## Wiring T-Cap
+
+> [!Caution]
+> The connection between the T-Cap and the Controller should only be done by a trained professional. 
+> **There is a danger to life due to high voltage (230V/400V) within the device!**
+
+For all connection to the T-Cap I've used `0.75mm²`, you can also use another cable but **you need to use at least `0.3mm²`!**
+
+<img src="Documentation/Screenshots/IndoorModule.jpg" alt="drawing" width="465" />
+
+### Temperature
+If you already use a external temperature sensor, you should use it as input temperature for the controller.
+In case you don't have an external sensor you should connect a fallback resistor to simulate e.g. 10°C.
+
+> [!NOTE]
+> You need to to change the setting of the T-Cap to use the alternative outdoor sensor, 
+> otherwise the temperature of the outdoor unit will be used.
+
+> [!IMPORTANT]
+> If there is no temperature sensor available for more than 5s the Device will notice it and log an error.
+> Therefore it is required to add an fallback resistor sensor if there is no real sensor connected to the controller.
+> This is the reason why the fallback 4CH Relay Module is highly recommended!
+
+<img src="Documentation/Screenshots/MainCircuitBoard.jpg" alt="drawing" width="465" />
+
+
+### Demand Control
+
+> [!NOTE]
+> The optional PCB needs to be available, needs to be enabled inside the T-Cap settings and the
+> demand control needs to be enabled inside system settings.
+
+> [!IMPORTANT]
+> Make sure you have connected the 0-10V GND and 10V to the correct connectors, 
+> unlike temperature, it is important to pay attention to polarity!
+
+<img src="Documentation/Screenshots/OptionalCircuitBoard.jpg" alt="drawing" width="465" />
 
 ## 3rd Party libraries
 The following libraries are used by this project (Thank you very much!)
