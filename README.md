@@ -94,6 +94,18 @@ You can find the the electrical drawings and parts inside `Documentation\Fritzin
 <img src="Documentation/Screenshots/Webinterface_SystemInfo.jpg" alt="drawing" width="300" /><img src="Documentation/Screenshots/Webinterface_WiFiInfo.jpg" alt="drawing" width="300" />
 
 ## Building the Project
+
+> [!NOTE]
+> This project requires [Visual Studio Code](https://code.visualstudio.com/download) with the  
+> [PlatformIO IDE](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide) and 
+> [C/C++ Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools-extension-pack) extensions
+> for compile and upload of the firmware to the Microcontroller.
+
+> [!IMPORTANT]
+> Make sure you have also installed the correct driver for the Microcontroller USB to Serial chip.
+> Unsually the driver is not part of the OS. In my case I needed to use the 
+> [CP210x Universal Windows Driver](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers?tab=downloads)
+
 For privacy reasons some settings are defined inside a header file that is excluded from git.
 Since this information are used inside the classes copy and rename the file `Secrets.template.h` to `Secrets.h` to resolve build errors after cloning.
 
