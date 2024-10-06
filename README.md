@@ -89,7 +89,7 @@ Since this information are used inside the classes copy and rename the file `Sec
 If there is no input sensor available you can use the integrated [OpenWeather API](https://openweathermap.org/current).
 To do so you need to create a [free account](https://home.openweathermap.org/users/sign_up) to receive the required `API Key`.
 
-The city ID can be taken from [OpenWeather](https://openweathermap.org) by searching for the location and can than be taken from URL (https://openweathermap.org/city/xxxxxxx)
+The city ID can be taken from [OpenWeather](https://openweathermap.org) by searching for the location and can than be taken from URL `.../city/**xxxxxxx**`.
 As alternative you can also use the `Latitude` + `Longitude` that can be taken from [Google Maps](https://www.google.com/maps) by right-click menu
 
 > [!NOTE]
