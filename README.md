@@ -79,9 +79,9 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 ## Electrical Drawings
 You can find the the electrical drawings and parts inside `Documentation\Fritzing` as [Fritzing](https://fritzing.org/) (freeware) project.
 
-<img src="Documentation/Screenshots/Breadboard Drawing.jpg" alt="drawing" width="250"/><img src="Documentation/Screenshots/Breadboard Failover Drawing.jpg" alt="drawing" width="366" />
+<img src="Documentation/Screenshots/Breadboard Drawing.jpg" alt="drawing" width="258"/><img src="Documentation/Screenshots/Schematic Drawing.jpg" alt="drawing" width="376" />
 
-<img src="Documentation/Screenshots/Schematic Drawing.jpg" alt="drawing" width="376" />
+<img src="Documentation/Screenshots/Breadboard Failover Drawing.jpg" alt="drawing" width="366" /><img src="Documentation/Screenshots/Schematic Failover Drawing.jpg" alt="drawing" width="369" />
 
 ## Final board (example)
 <img src="Documentation/Images/Image1.jpg" alt="drawing" width="283" /><img src="Documentation/Images/Image2.jpg" alt="drawing" width="250" />
@@ -119,7 +119,7 @@ As alternative you can also use the `Latitude` + `Longitude` that can be taken f
 The configuration needs to be placed inside the `Secrets.h`.
 
 > [!NOTE]
-> Requests for free accounts are limited to to 60 calls/minute or 1,000,000 calls/month
+> Requests for free accounts are limited to to 60 calls/minute or 2000 calls/day
 
 ## Temperature Adjustment
 
