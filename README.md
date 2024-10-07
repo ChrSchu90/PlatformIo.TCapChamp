@@ -2,7 +2,7 @@
 [![Build](https://github.com/ChrSchu90/PlatformIo.TCapChamp/actions/workflows/build.yml/badge.svg)](https://github.com/ChrSchu90/PlatformIo.TCapChamp/actions/workflows/build.yml)
 
 ## Description
-`ESP32` project that manipulates the outside temperature measurement to adjust the heat pump cycle rate. In case the heat pump is overdimensioned it can increase its efficiency dramatically since you can adjust the cycle rate specifically on your environment and needs.
+`ESP32` project that manipulates the outside temperature measurement to adjust the heat pump cycle rate. In case the heat pump is over dimensioned it can increase its efficiency dramatically since you can adjust the cycle rate specifically on your environment and needs.
 The manipulated temperature output needs to be connected to the external temperature sensor of the T-Cap.
 
 If you already use an external temperature sensor you can connect it as input sensor for the ESP, in case you don't have a temperature sensor you can use the free [OpenWeather API](https://api.openweathermap.org) to receive actual temperatures. 
@@ -20,7 +20,7 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 > - 56 Main Circuit Board 
 > - 57 Sub Printed Circuit Board
 > - 76 Cable management
-> - 78 Temperaute Sensor
+> - 78 Temperature Sensor
 > - 88 Demand Control
 > - 128 Alternative Outdoor Ambient Sensor Control
 
@@ -50,7 +50,7 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 | [Electrical wire 18awg 2×0.75mm²](https://www.amazon.de/dp/B0B7WSMR8L) | &#10007; | Connection optional 0-10V Demand Control to T-Cap                 |
 | [Electrical wire 18awg 4×0.75mm²](https://www.amazon.de/dp/B0BFWL2RZB) | &#10003; | Connection temperature output to T-Cap                            |
 | [Prototype Board](https://www.amazon.de/dp/B08F2TS7ZC)     | &#10003; | For final board                                                               |
-| 10k resistor                                               | &#10003; | Voltage devider for input sensor                                              |
+| 10k resistor                                               | &#10003; | Voltage divider for input sensor                                              |
 | 5k resistor                                                | &#10003; | Pre-Resistor for Digital potentiometer (defines the possible output temperature, in my case +30°C to -20°C) |
 | 2k resistor                                                | &#10003; | GND pulldown for unused Digital potentiometer terminal                        |
 | [4CH 5V Relay Module](https://www.amazon.de/dp/B09FS5G1Y9) | &#10007; | Optional relay module (High-Level-Trigger) for fallback implementation, not required but highly recommended!  |
@@ -64,7 +64,7 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 | Name                                                                  | Description                             |
 | --------------------------------------------------------------------- | --------------------------------------- |
 | [Housing](https://www.amazon.de/dp/B0CKT697NP)                        | Housing for Controller, Relay...        |
-| [USB-C Connector](https://www.amazon.de/dp/B0BQGBWVWM)                | USB conector for power or PC            |
+| [USB-C Connector](https://www.amazon.de/dp/B0BQGBWVWM)                | USB connector for power or PC           |
 | [4-Pin Connector Temperature](https://www.amazon.de/dp/B07TJK2Z7M)    | Connector for temperature input/output  |
 | [2-Pin Connector Demand Control](https://www.amazon.de/dp/B07JMYCPSN) | Connector for Demand control (optional) |
 | [Mount for boards](https://www.amazon.de/dp/B09C21MS45)               | Connector for Demand control (optional) |
@@ -77,7 +77,7 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 - Glue (for housing board mounts)
 
 ## Electrical Drawings
-You can find the the electrical drawings and parts inside `Documentation\Fritzing` as [Fritzing](https://fritzing.org/) (freeware) project.
+You can find the electrical drawings and parts inside `Documentation\Fritzing` as [Fritzing](https://fritzing.org/) (freeware) project.
 
 ### Without failover relay
 <img src="Documentation/Screenshots/Breadboard Drawing.jpg" alt="drawing" width="258"/><img src="Documentation/Screenshots/Schematic Drawing.jpg" alt="drawing" width="376" />
@@ -105,7 +105,7 @@ You can find the the electrical drawings and parts inside `Documentation\Fritzin
 
 > [!IMPORTANT]
 > Make sure you have also installed the correct driver for the Microcontroller USB to Serial chip.
-> Unsually the driver is not part of the OS. In my case I needed to use the 
+> Usually the driver is not part of the OS. In my case I needed to use the 
 > [CP210x Universal Windows Driver](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers?tab=downloads)
 
 For privacy reasons some settings are defined inside a header file that is excluded from git.
@@ -115,7 +115,7 @@ Since this information are used inside the classes copy and rename the file `Sec
 If there is no input sensor available you can use the integrated [OpenWeather API](https://openweathermap.org/current).
 To do so you need to create a [free account](https://home.openweathermap.org/users/sign_up) to receive the required `API Key`.
 
-The city ID can be taken from [OpenWeather](https://openweathermap.org) by searching for the location and can than be taken from URL `.../city/xxxxxxx`.
+The city ID can be taken from [OpenWeather](https://openweathermap.org) by searching for the location and can then be taken from URL `.../city/xxxxxxx`.
 As alternative you can also use the `Latitude` + `Longitude` that can be taken from [Google Maps](https://www.google.com/maps) by right-click menu.
 
 The configuration needs to be placed inside the `Secrets.h`.
@@ -135,7 +135,7 @@ A common way to manipulate the temperature is to connect a parallel resistor (e.
 ### Temperature Adjustment
 Due to the precision problems with a parallel resistor this project has been started, to provide a more granular and comfortable way, without changing hardware if another offset is required. 
 
-It also makes it a lot easier at the beginning, since first you need to figure out what offset is the best based on your environment and preferences. To do so you can control input and output temperatures manually until you know where your sweetspot is. Afterwards the controller manipulates the output temperature based on a input temperature fully automated.
+It also makes it a lot easier at the beginning, since first you need to figure out what offset is the best based on your environment and preferences. To do so you can control input and output temperatures manually until you know where your sweet spot is. Afterwards the controller manipulates the output temperature based on a input temperature fully automated.
 
 <img src="Documentation/Screenshots/Example1Configuration.jpg" alt="drawing" width="85" /><img src="Documentation/Screenshots/Example1Chart.jpg" alt="drawing" width="375" />
 
@@ -156,9 +156,9 @@ It also makes it a lot easier at the beginning, since first you need to figure o
 4. Force manual output temperature `3` on/off
 
 > [!IMPORTANT]
-> Keep in mind that the components are not perfect and have tolerances. Also the `Digital Potentiometer`
-> works with limited steps, which can't alway be on spot. 
-> The `Target Temperature` is calculated and may not match the `Output Temperature` that represens the
+> Keep in mind that the components are not perfect and have tolerances. Also, the `Digital Potentiometer`
+> works with limited steps, which can't always be on spot. 
+> The `Target Temperature` is calculated and may not match the `Output Temperature` that represents the
 > mathematically closest available resistance. If you want, you can use the T-Cap sensor calibration for compensation.
 >
 > Below you can find a chart with the delta between `Target Temperature`, `Output Temperature`
@@ -175,7 +175,7 @@ To do so you can define temperature areas and its power limit inside the UI.
 > temperature adjustments will not influence the power limits.
 
 > [!TIP]
-> The first matching area will be uses (top to buttom). In case no responsable area will be found the output will be set to 0V (not active).
+> The first matching area will be uses (top to bottom). In case no responsible area will be found the output will be set to 0V (not active).
 > If you like to define a default limit place the value inside the last area with start 30°C and end -20°C and define specific areas above. 
 > To deactivate areas set start and end temperature to the same value.
 
@@ -210,19 +210,19 @@ For all connection to the T-Cap I've used `0.75mm²`, you can also use another c
 
 ### Temperature
 If you already use a external temperature sensor, you should use it as input temperature for the controller.
-In case you don't have an external sensor you should connect a fallback resistor to simulate e.g. 10°C.
+In case you don't have an external sensor, you should connect a fallback resistor to simulate e.g. 10°C.
 
 > [!TIP]
-> Alternatively you can also connect the temperature to the outdoor device instead of the indoor device.
+> Alternatively, you can also connect the temperature to the outdoor device instead of the indoor device.
 > Make sure to check the manual for the correct wiring!
 
 > [!NOTE]
-> You need to to change the setting of the T-Cap to use the alternative outdoor sensor, 
-> otherwise the temperature of the outdoor unit will be used.
+> You need to change the setting of the T-Cap to use the alternative outdoor sensor, 
+> otherwise, the temperature of the outdoor unit will be used.
 
 > [!IMPORTANT]
 > If there is no temperature sensor available for more than 5s the Device will notice it and log an error.
-> Therefore it is required to add an fallback resistor sensor if there is no real sensor connected to the controller.
+> Therefore, it is required to add a fallback resistor sensor if there is no real sensor connected to the controller.
 > This is the reason why the fallback 4CH Relay Module is highly recommended, that will connect the input
 > sensor to the T-Cap while the controller is turned off or during boot until it is ready!
 
