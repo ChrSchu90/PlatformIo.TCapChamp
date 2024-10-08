@@ -2,7 +2,7 @@
 [![Build](https://github.com/ChrSchu90/PlatformIo.TCapChamp/actions/workflows/build.yml/badge.svg)](https://github.com/ChrSchu90/PlatformIo.TCapChamp/actions/workflows/build.yml)
 
 ## Description
-`ESP32` project that manipulates the outside temperature measurement to adjust the heat pump cycle rate. In case the heat pump is over dimensioned it can increase its efficiency dramatically since you can adjust the cycle rate specifically on your environment and needs.
+`ESP32` project that manipulates the outdoor air temperature measurement to adjust the heat pump cycle rate. In case the heat pump is over dimensioned it can increase its efficiency dramatically since you can adjust the cycle rate specifically on your environment and needs.
 The manipulated temperature output needs to be connected to the external temperature sensor of the T-Cap.
 
 If you already use an external temperature sensor you can connect it as input sensor for the ESP, in case you don't have a temperature sensor you can use the free [OpenWeather API](https://api.openweathermap.org) to receive actual temperatures. 
