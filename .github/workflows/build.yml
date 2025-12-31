@@ -28,7 +28,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Rename secrets template file for build
-      run: mv src/Secrets.template.h src/Secrets.h
+      run: mv include/Secrets.template.h include/Secrets.h
     - uses: actions/cache@v4
       with:
         path: |
