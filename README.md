@@ -11,7 +11,7 @@ Via an optional 0-10V DAC it is also possible to limit the power consumption via
 
 > [!NOTE]
 > You can find the measurements, charts and calculations inside the [TestsAndCharts.xlsx](Documentation/TestsAndCharts.xlsx),
-> device specific information can be taken from the [T-Cap Service Manual (PDF)](https://www.kaelte-bast.de/dateien_neu13/Panasonic/01-produktunterlagen/aquarea/produkte/waermepumpen/t-cap/sqc/handbuch_englisch/sm_wh-sqc09h3e8%2Cwh-sqc12.16h9e8_%28papamy1704053ce%29.pdf)
+> device specific information can be taken from the [T-Cap Service Manual (PDF)](https://web.archive.org/web/20250917183120/https://www.kaelte-bast.de/dateien_neu13/Panasonic/01-produktunterlagen/aquarea/produkte/waermepumpen/t-cap/sqc/handbuch_englisch/sm_wh-sqc09h3e8%2Cwh-sqc12.16h9e8_(papamy1704053ce).pdf)
 
 > [!TIP]
 > Most important Manual pages:
