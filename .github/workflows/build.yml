@@ -19,37 +19,43 @@ on:
     branches:
       - 'main'
 
-permissions:
-  contents: write
-
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Create/update GitHub Releases
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
+
     - name: Rename secrets template file for build
       run: mv include/Secrets.template.h include/Secrets.h
-    - uses: actions/cache@v4
+
+    - uses: actions/cache@v5
       with:
         path: |
           ~/.cache/pip
           ~/.platformio/.cache
         key: ${{ runner.os }}-pio
-    - uses: actions/setup-python@v5
+
+    - uses: actions/setup-python@v6
       with:
         python-version: '3.9'
+
     - name: Install PlatformIO Core
       run: pip install --upgrade platformio
+
     - name: Build PlatformIO Project
       run: pio run
+
     - name: Get Version from Tag
       if: startsWith(github.event.ref, 'refs/tags/v')
       id: tagver
       uses: ChrSchu90/GitTagSemanticVersion@v1.1
+
     - name: Create Release
-      if: ${{ steps.tagver.outcome == 'success' && steps.tagver.outputs.is_valid == 'true' }}
+      if: ${{ steps.tagver.outputs.is_valid == 'true' }}
       uses: softprops/action-gh-release@v2
       with:
         fail_on_unmatched_files: true
