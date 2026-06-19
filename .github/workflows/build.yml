@@ -27,7 +27,7 @@ jobs:
       contents: write # Create/update GitHub Releases
     steps:
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
 
     - name: Secrets file
       run: mv include/Secrets.template.h include/Secrets.h
